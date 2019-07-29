@@ -61,9 +61,9 @@ class DigicelLoginApi {
         
         
         makePostRequest(apiName: "oauth2/token", params: params) { [weak self] (response, _, error) in
-//                        guard let strongSelf = self else {
-//                            return
-//                        }
+            guard let strongSelf = self else {
+                return
+            }
             
             if let response = response as? [String : Any] {
                 guard let token = response["access_token"] as? String,
@@ -71,7 +71,7 @@ class DigicelLoginApi {
                     return completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
                 }
                 let dgToken = DigicelToken.init(dict: response)
-                self?.digicelToken = dgToken
+                strongSelf.digicelToken = dgToken
                 completion(true, token ,nil)
             } else {
                 completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
@@ -92,9 +92,6 @@ class DigicelLoginApi {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
         makeRequest(request: request) { [weak self] (response, _, error) in
-            //            guard let strongSelf = self else {
-            //                return
-            //            }
             if let response = response as? [String:Any] {
                 completion(true, response, nil)
             } else {
@@ -124,9 +121,9 @@ class DigicelLoginApi {
         request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
 
         makeRequest(request: request) { [weak self] (response, _, error) in
-            //            guard let strongSelf = self else {
-            //                return
-            //            }
+            guard let strongSelf = self else {
+                return
+            }
             if var response = response as? [Any] {
                 var activePlans = [DigicelPlan]()
                 for index in 0..<response.count {
@@ -140,7 +137,7 @@ class DigicelLoginApi {
                         }
                     }
                 }
-                self?.currentDigicelUser?.set(activePlans: activePlans)
+                strongSelf.currentDigicelUser?.set(activePlans: activePlans)
                 completion(true, response, nil)
             } else {
                 completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
@@ -185,9 +182,6 @@ class DigicelLoginApi {
         request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
         
         makeRequest(request: request) { [weak self] (response, _, error) in
-            guard let strongSelf = self else {
-                return
-            }
             if let response = response,
                 let api = api {
                 api.updateDataWith(email: email, response: response, error: error, completion: { (succeeded, error) in
@@ -223,9 +217,6 @@ class DigicelLoginApi {
         request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
         
         makeRequest(request: request) { [weak self] (response, _, error) in
-//            guard let strongSelf = self else {
-//                return
-//            }
             if let response = response,
                 let api = api {
                 api.updateDataWith(email: email, response: response, error: error, completion: { (succeeded, error) in

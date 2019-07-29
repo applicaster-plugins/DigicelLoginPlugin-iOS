@@ -104,8 +104,8 @@
             </subviews>
             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <constraints>
+                <constraint firstItem="4xh-bn-thd" firstAttribute="bottom" secondItem="Zk4-Y4-GRG" secondAttribute="bottom" id="Ipy-zE-xMJ"/>
                 <constraint firstAttribute="trailing" secondItem="4xh-bn-thd" secondAttribute="trailing" id="L6a-gC-8qb"/>
-                <constraint firstItem="4xh-bn-thd" firstAttribute="bottom" secondItem="djg-af-Htq" secondAttribute="bottom" id="kTt-yc-0mg"/>
                 <constraint firstItem="4xh-bn-thd" firstAttribute="top" secondItem="Zk4-Y4-GRG" secondAttribute="top" id="kYi-Io-u6O"/>
                 <constraint firstItem="4xh-bn-thd" firstAttribute="leading" secondItem="djg-af-Htq" secondAttribute="leading" id="mpm-qA-rm2"/>
             </constraints>
