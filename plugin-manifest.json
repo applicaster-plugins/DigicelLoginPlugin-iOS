@@ -1,0 +1,36 @@
+{
+	"api": {
+		"class_name": "ZappDigicelLogin",
+		"modules": [
+			"DigicelLoginPlugin"
+		],
+		"require_startup_execution": true
+	},
+	"dependency_repository_url": [
+		"https://github.com/applicaster-plugins/DigicelLoginPlugin-iOS"
+	],
+	"platform": "ios",
+	"author_name": "Miri Vecselboim",
+	"author_email": "m.vecselboim@applicaster.com",
+	"manifest_version": "0.1.0",
+	"name": "DigicelLoginPlugin",
+	"description": "Integration with Digicel Authentication services",
+	"type": "login",
+	"screen": false,
+	"identifier": "DigicelLoginPlugin",
+	"ui_builder_support": true,
+	"dependency_name": "DigicelLoginPlugin",
+	"dependency_version": "0.1.0",
+	"whitelisted_account_ids": [
+		"5af949534da8f300080050f9"
+	],
+	"min_zapp_sdk": "11.3.0-Dev",
+	"deprecated_since_zapp_sdk": "",
+	"unsupported_since_zapp_sdk": "",
+	"supported_nav_items": [],
+	"react_native": false,
+	"custom_configuration_fields": [],
+	"targets": [
+		"mobile"
+	]
+}
