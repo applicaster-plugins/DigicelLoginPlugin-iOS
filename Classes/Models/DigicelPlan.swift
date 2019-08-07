@@ -20,22 +20,22 @@ class DigicelPlan: NSObject {
     var object:[String:Any]?
     
     var name: String?
-    var dateEnd: Float?
-    var dateStart: Float?
+    var dateEnd: Int64?
+    var dateStart: Int64?
     var planDescription: String?
-    var planId: String?
-    var subscriptionId: String?
+    var planId: Int?
+    var subscriptionId: Int?
     
     init?(dict:[String:Any]) {
         super.init()
         
         object = dict
         name = dict[PlanModelKeys.name] as? String
-        dateEnd = dict[PlanModelKeys.dateEnd] as? Float
-        dateStart = dict[PlanModelKeys.dateStart] as? Float
+        dateEnd = dict[PlanModelKeys.dateEnd] as? Int64
+        dateStart = dict[PlanModelKeys.dateStart] as? Int64
         planDescription = dict[PlanModelKeys.description] as? String
-        planId = dict[PlanModelKeys.planId] as? String
-        subscriptionId = dict[PlanModelKeys.subscriptionId] as? String
+        planId = dict[PlanModelKeys.planId] as? Int
+        subscriptionId = dict[PlanModelKeys.subscriptionId] as? Int
 
     }
     

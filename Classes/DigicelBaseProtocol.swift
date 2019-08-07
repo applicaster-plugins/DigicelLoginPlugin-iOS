@@ -9,9 +9,5 @@ import Foundation
 import AVFoundation
 
 @objc public protocol DigicelBaseProtocol {
-
     func userDidSelectToClose()
-    
-//    func userDidSelectToBackFrom(viewController: UIViewController?)
-
 }
