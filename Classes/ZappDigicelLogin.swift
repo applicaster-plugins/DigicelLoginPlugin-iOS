@@ -60,8 +60,55 @@ import CleengLogin
      */
     
     public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
-        cleengLogin.isUserComply(policies: policies, completion: completion)
+        
+       cleengLogin.isUserComply(policies: policies, completion: completion)
+       
     }
+    
+    //check if user can see item or need to login / buy subscription
+    public func itemIsLocked(policies: [String : NSObject]) -> Bool{
+        if let isfree = policies["free"] as? Bool{
+            if(isfree){
+                return true
+            }
+        }
+
+        if(isFreeAccess() && (digicelApi?.currentDigicelUser?.userType == .Basic || digicelApi?.currentDigicelUser?.userType == .Premium)){
+            return true
+        }
+        
+        if let _ = policies["playable_items"]{
+            return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+        }
+        
+
+        if let type = policies["type"] as? String {
+            switch type {
+            case "Channel":
+                  return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            case "AtomEntry":
+                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            case "VodItem":
+                return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            case "Category":
+                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            case "Collection":
+                return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            default:
+                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            }
+        }
+        return false
+   }
+    
+    /**
+     `ZPLoginProviderUserDataProtocol` api. Call this to check if user has access to one or more items.
+     */
+    public func isUserComply(policies: [String : NSObject]) -> Bool {
+        return itemIsLocked(policies: policies)
+    }
+    
+    //public fun
     
     /**
      `ZPLoginProviderUserDataProtocol` api. Call this to present UI to let user make login (if needed) and IAP purchase (if needed).
@@ -150,11 +197,13 @@ import CleengLogin
                     let email = response["email"] as? String,
                     email.isEmpty == false {
                     // The user has an email address, continue
+                    digicelApi.currentDigicelUser?.userType = .Basic
                     self.continueSubscriptionFlow(completion: { (succeeded, error) in
                         if succeeded == true {
                             if let completion = self.loginCompletion {
                                 completion(.completedSuccessfully)
                             }
+                            digicelApi.freeAccessToken()
                         }
                         else {
                             if let completion = self.loginCompletion {
@@ -186,7 +235,7 @@ import CleengLogin
         } else if let num = loggedInFreeAccess as? Int {
             retVal = (num == 1)
         } else if let str = loggedInFreeAccess as? String {
-            retVal = (str == "1")
+            retVal = (str == "0")
         }
         return retVal
     }
@@ -224,6 +273,7 @@ import CleengLogin
             if let digicelWebViewController = digicelWebViewController {
                 digicelWebViewController.webLoginVC = webViewVC
                 digicelWebViewController.addChildViewController(digicelWebViewController.webLoginVC, to: digicelWebViewController.webContainerView)
+                webViewVC.loadTargetURL()
             }
            
         }
@@ -231,9 +281,11 @@ import CleengLogin
     
     
     func presentEmailVerificationWebView()  {
-        if let configurationJSON = self.configurationJSON {
-            self.presentWebViewWith(url: configurationJSON["digicel_email_verification_url"] as? String)
-        }
+            self.presentWebViewWith(url: "https://digicelid.digicelgroup.com/management/identity/edit/email.do")
+    }
+    
+    public func handleRedirectUriUpdateMail() {
+        self.userDidSelectToClose()
     }
     
     func continueSubscriptionFlow(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
@@ -244,9 +296,12 @@ import CleengLogin
                         if succeeded == true {
                             if self.isFreeAccess() == true {
                                 completion(succeeded, error)
+                                self.userDidSelectToClose()
                             }
                             else  {
+                                completion(succeeded, error)
                                 //check if need to continue app flow or present the digicel subscription screen
+                                self.userDidSelectToClose()
                             }
                         }
                         else {

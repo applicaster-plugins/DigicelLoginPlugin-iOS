@@ -7,6 +7,9 @@
 
 import Foundation
 import CleengLogin
+import ZappPlugins
+import ZappLoginPluginsSDK
+import ApplicasterSDK
 
 let kDigicelLoginAndSubscribeApiErrorDomain = "DigicelLoginAndSubscribeApi"
 
@@ -59,7 +62,6 @@ class DigicelLoginApi {
         
         let params = String(format: "code=%@&client_id=%@&client_secret=%@&redirect_uri=%@&grant_type=%@", encode(string: code),self.digicelClientID,self.digicelSecretKey,encode(string: digicelRedirectUri),"authorization_code")
         
-        
         makePostRequest(apiName: "oauth2/token", params: params) { [weak self] (response, _, error) in
             guard let strongSelf = self else {
                 return
@@ -100,7 +102,7 @@ class DigicelLoginApi {
         }
     }
     
-    /// Call this api to get Digicel user account.
+    /// Call this api to get Digicel user Subscriptions.
     func getUserSubscriptions(completion: @escaping ((_ succeeded: Bool, _ response: [Any]?, _ error: Error?) -> Void)) {
         guard let digicelToken = digicelToken,
             let accessToken = digicelToken.accessToken else {
@@ -111,7 +113,6 @@ class DigicelLoginApi {
         let apiName = "me/provisioning/subscriptions?status=active"
         let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
         let request = NSMutableURLRequest(url: url)
-        
         request.httpMethod = "GET"
         
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -119,6 +120,7 @@ class DigicelLoginApi {
         request.setValue("5000341", forHTTPHeaderField: "AndroidVer")
         request.setValue("ANDROID", forHTTPHeaderField: "Source")
         request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
+        request.setValue("no-cach", forHTTPHeaderField: "Cache-Control")
 
         makeRequest(request: request) { [weak self] (response, _, error) in
             guard let strongSelf = self else {
@@ -146,7 +148,7 @@ class DigicelLoginApi {
     }
     
     //MARK: - Cleeng API'S
-    
+    /// register to cleeng and get token / if user email already exists - get token
     func registerToCleeng(api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
         if let user = currentDigicelUser,
             let email = user.email {
@@ -191,6 +193,40 @@ class DigicelLoginApi {
                 completion(false, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
             }
         }
+    }
+    
+    //
+    func cleengUpdateUserPackages(withEmail email: String , plan: DigicelPlan , completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)){
+        let apiName = "https://c9brkksqb8.execute-api.eu-west-1.amazonaws.com/stage/subscriptions/create"
+        let url = URL(string: apiName)!
+        let request = NSMutableURLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(publisherId)", forHTTPHeaderField: "Authorization")
+        
+        let params: [String:Any] = ["email" : email , "planId" : plan.planId , "subscriptionId" : plan.subscriptionId , "dateEnd" : plan.dateEnd ]
+        request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
+        
+        makeRequest(request: request) { [weak self] (response, _, error) in
+            let res = response as? [String : Any]
+        }
+    }
+    
+    func freeAccessToken(){
+       let timestamp = NSDate().addingDays(30)?.timeIntervalSince1970
+       let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
+       let url = "timestamp=\(timestamp!)&uuid=\(uuid!)"
+       let data = (url).data(using: String.Encoding.utf8)
+       let base64URL = data!.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
+       let tokenUrl = "sportsmaxds://fetchData?type=SPORTSMAX_TOKEN&url=" + base64URL ;
+       let atom =   APAtomFeed.init(url: tokenUrl)
+        APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
+            if let token  = model?.extensions["auth_token"] as? String{
+                APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: "179")
+                
+            }
+        }
+        
     }
     
     func cleengRegisterCustomer(withEmail email: String, api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
@@ -283,8 +319,8 @@ class DigicelLoginApi {
         task.resume()
     }
     
-    //MARK: -
-
+    //MARK: - digicel api for token and account info
+    /// getting access token and digicel account
     public func continueOAuthFlow(authCode: String?, completion: @escaping ((_ succeeded: Bool, _ response: Any?, _ error: Error?) -> Void)) {
         getAccessTokenWith(authCode: authCode) { (succeeded, accessToken, error) in
             if succeeded == true {
@@ -320,6 +356,15 @@ class DigicelLoginApi {
             retVal = encodedStr
         }
         return retVal
+    }
+    
+    //MARK: - Api names
+    
+    enum ApiType: String {
+        case getAccessToken = "oauth2/token"
+        case getUserAccount = "account?scope=GET_ACCOUNT"
+        case getUserSubscriptions = "me/provisioning/subscriptions?status=active"
+        case cleengGenerateCustomerToken  = "generateCustomerToken"
     }
 
     //MARK: - Errors

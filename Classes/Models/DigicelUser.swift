@@ -22,7 +22,7 @@ class DigicelUser: NSObject {
 
     }
     var object:[String:Any]?
-    
+    var userType = UserType.Free
     var token: DigicelToken?
     var email: String?
     var password: String?
@@ -71,5 +71,13 @@ class DigicelUser: NSObject {
     func set(activePlans: [DigicelPlan]?) {
         let plans = activePlans
         digicelActivePlans = plans
+    }
+    
+    func set(type: UserType?) {
+        userType = type!
+    }
+    
+    enum UserType {
+        case Free,Basic,Premium
     }
 }
