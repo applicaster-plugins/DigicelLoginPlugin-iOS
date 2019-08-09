@@ -202,7 +202,7 @@ import CleengLogin
                             if let completion = self.loginCompletion {
                                 completion(.completedSuccessfully)
                             }
-                            digicelApi.freeAccessToken()
+                           
                         }
                         else {
                             if let completion = self.loginCompletion {
@@ -293,17 +293,37 @@ import CleengLogin
                 if succeeded == true {
                     digicelApi.registerToCleeng(api: self.getCleengApi(), completion: { (succeeded, error) in
                         if succeeded == true {
-                            digicelApi.freeAccessToken()
-                            digicelApi.currentDigicelUser?.userType = .Basic
-                            if self.isFreeAccess() == true {
-                                completion(succeeded, error)
-                                self.userDidSelectToClose()
-                            }
-                            else  {
-                                completion(succeeded, error)
-                                //check if need to continue app flow or present the digicel subscription screen
-                                self.userDidSelectToClose()
-                            }
+                            digicelApi.freeAccessToken(completion: { (sucsses) in
+                                if(sucsses){
+                                    digicelApi.currentDigicelUser?.userType = .Basic
+                                    if self.isFreeAccess() == true {
+                                       if  let vc = self.navigationController?.viewControllers.first{
+                                        vc.dismiss(animated: false, completion: {
+                                            completion(succeeded, error)
+                                        })
+                                        }
+                                       
+                                       // completion(succeeded, error)
+                                        
+                                        //   self.userDidSelectToClose()
+                                    }
+                                    else  {
+                                        if  let vc = self.navigationController?.viewControllers.first{
+                                            vc.dismiss(animated: false, completion: {
+                                                completion(succeeded, error)
+                                            })
+                                        }
+                                       
+                                       // completion(succeeded, error)
+                                        //check if need to continue app flow or present the digicel subscription screen
+                                        //  self.userDidSelectToClose()
+                                    }
+                                }else{
+                                    self.userDidSelectToClose()
+                                      // present error alert and return completion(.failed)
+                                }
+                            })
+                           
                         }
                         else {
                             // present error alert and return completion(.failed)
