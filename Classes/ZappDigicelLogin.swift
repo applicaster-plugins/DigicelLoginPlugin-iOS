@@ -197,7 +197,6 @@ import CleengLogin
                     let email = response["email"] as? String,
                     email.isEmpty == false {
                     // The user has an email address, continue
-                    digicelApi.currentDigicelUser?.userType = .Basic
                     self.continueSubscriptionFlow(completion: { (succeeded, error) in
                         if succeeded == true {
                             if let completion = self.loginCompletion {
@@ -285,7 +284,7 @@ import CleengLogin
     }
     
     public func handleRedirectUriUpdateMail() {
-        self.userDidSelectToClose()
+   //     self.userDidSelectToClose()
     }
     
     func continueSubscriptionFlow(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
@@ -294,6 +293,8 @@ import CleengLogin
                 if succeeded == true {
                     digicelApi.registerToCleeng(api: self.getCleengApi(), completion: { (succeeded, error) in
                         if succeeded == true {
+                            digicelApi.freeAccessToken()
+                            digicelApi.currentDigicelUser?.userType = .Basic
                             if self.isFreeAccess() == true {
                                 completion(succeeded, error)
                                 self.userDidSelectToClose()
