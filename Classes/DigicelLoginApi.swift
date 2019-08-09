@@ -212,7 +212,7 @@ class DigicelLoginApi {
         }
     }
     
-    func freeAccessToken(){
+    func freeAccessToken(completion: @escaping ((_ succeeded: Bool) -> Void)){
        let timestamp = NSDate().addingDays(30)?.timeIntervalSince1970
        let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
        let url = "timestamp=\(timestamp!)&uuid=\(uuid!)"
@@ -223,7 +223,9 @@ class DigicelLoginApi {
         APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
             if let token  = model?.extensions["auth_token"] as? String{
                 APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: "179")
-                
+                completion(true)
+            }else{
+                completion(false)
             }
         }
         
