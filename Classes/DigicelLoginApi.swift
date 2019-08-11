@@ -162,12 +162,12 @@ class DigicelLoginApi {
                     }
                 }
                 else {
-                    // return completion or alert
+                    completion(false, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
                 }
             }
         }
         else {
-            // return completion or alert
+           completion(false, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
         }
     }
     
