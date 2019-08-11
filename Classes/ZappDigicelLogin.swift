@@ -130,6 +130,22 @@ import CleengLogin
         return false
     }
     
+    func displayErrorAlert(){
+        let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
+        let message = self.configuration?.localization.localizedString(for: .errorInternalMessage)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: self.configuration?.localization.localizedString(for: .alertCancelAction, defaultString: NSLocalizedString("OK", comment: "Cancel")), style: .cancel, handler: { [weak self] _ in
+             guard let strongSelf = self else { return }
+            if let vc = strongSelf.navigationController?.presentingViewController {
+                vc.dismiss(animated: true, completion: {
+                })
+            }
+        }))
+        if let vc = self.navigationController?.viewControllers.first{
+            vc.present(alert, animated: true, completion: nil)
+        }
+    }
+    
     /**
      `ZPLoginProviderUserDataProtocol` api. Check if there currently UI presented to make login or IAP purchase for an item
      */
@@ -217,7 +233,7 @@ import CleengLogin
                 }
             }
             else {
-                // present alert with error
+                self.displayErrorAlert()
             }
             
         }
@@ -302,10 +318,6 @@ import CleengLogin
                                             completion(succeeded, error)
                                         })
                                         }
-                                       
-                                       // completion(succeeded, error)
-                                        
-                                        //   self.userDidSelectToClose()
                                     }
                                     else  {
                                         if  let vc = self.navigationController?.viewControllers.first{
@@ -313,25 +325,23 @@ import CleengLogin
                                                 completion(succeeded, error)
                                             })
                                         }
-                                       
-                                       // completion(succeeded, error)
-                                        //check if need to continue app flow or present the digicel subscription screen
-                                        //  self.userDidSelectToClose()
                                     }
                                 }else{
-                                    self.userDidSelectToClose()
-                                      // present error alert and return completion(.failed)
+                                     self.displayErrorAlert()
+                                     completion(false, error)
                                 }
                             })
                            
                         }
                         else {
-                            // present error alert and return completion(.failed)
+                             self.displayErrorAlert()
+                             completion(false, error)
                         }
                     })
                 }
                 else {
-                    // present error alert and return completion(.failed)
+                     self.displayErrorAlert()
+                    completion(false, error)
                 }
             })
         }
