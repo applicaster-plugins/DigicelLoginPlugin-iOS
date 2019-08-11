@@ -27,6 +27,8 @@ import CleengLogin
     private var cleengLogin: ZappCleengLogin!
 
     private var digicelApi: DigicelLoginApi?
+    
+    private var userType: DigicelUser.UserType? = .Free
 
     private var digicelWebViewController: DigicelLoginWebViewController!
     
@@ -48,6 +50,9 @@ import CleengLogin
         cleengLogin = ZappCleengLogin.init(configurationJSON: configurationJSON)
         self.cleengPublisherId = publisherId
         self.configuration = ZappDigicelConfiguration(configuration: (configurationJSON as? [String:Any]) ?? [:])
+        if let userType = UserDefaults.standard.string(forKey: "userType"){
+           self.userType = DigicelUser.UserType(rawValue: userType)!
+        }
     }
     
     //MARK: - ZPLoginProviderUserDataProtocol
@@ -72,30 +77,25 @@ import CleengLogin
                 return true
             }
         }
-
-        if(isFreeAccess() && (digicelApi?.currentDigicelUser?.userType == .Basic || digicelApi?.currentDigicelUser?.userType == .Premium)){
-            return true
-        }
         
         if let _ = policies["playable_items"]{
-            return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+            return canPlayItem()
         }
         
-
         if let type = policies["type"] as? String {
             switch type {
             case "Channel":
-                  return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                  return canPlayItem()
             case "AtomEntry":
-                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                 return canPlayItem()
             case "VodItem":
-                return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                return canPlayItem()
             case "Category":
-                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                 return canPlayItem()
             case "Collection":
-                return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                return canPlayItem()
             default:
-                 return digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Basic || digicelApi?.currentDigicelUser?.userType  == DigicelUser.UserType.Premium
+                 return canPlayItem()
             }
         }
         return false
@@ -106,6 +106,13 @@ import CleengLogin
      */
     public func isUserComply(policies: [String : NSObject]) -> Bool {
         return itemIsLocked(policies: policies)
+    }
+    
+    public func canPlayItem() -> Bool{
+        if(isFreeAccess() && (userType == .Basic || userType == .Premium)){
+            return true
+        }
+        return false
     }
     
     //public fun
@@ -250,7 +257,7 @@ import CleengLogin
         } else if let num = loggedInFreeAccess as? Int {
             retVal = (num == 1)
         } else if let str = loggedInFreeAccess as? String {
-            retVal = (str == "0")
+            retVal = (str == "1")
         }
         return retVal
     }
@@ -312,6 +319,7 @@ import CleengLogin
                             digicelApi.freeAccessToken(completion: { (sucsses) in
                                 if(sucsses){
                                     digicelApi.currentDigicelUser?.userType = .Basic
+                                    UserDefaults.standard.set(DigicelUser.UserType.Basic.rawValue, forKey: "userType")
                                     if self.isFreeAccess() == true {
                                        if  let vc = self.navigationController?.viewControllers.first{
                                         vc.dismiss(animated: false, completion: {
@@ -322,7 +330,7 @@ import CleengLogin
                                     else  {
                                         if  let vc = self.navigationController?.viewControllers.first{
                                             vc.dismiss(animated: false, completion: {
-                                                completion(succeeded, error)
+                                                completion(false, error)
                                             })
                                         }
                                     }

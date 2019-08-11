@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
     # }
     c.dependency 'ZappPlugins'
     c.dependency 'ApplicasterSDK'
-    c.dependency 'CleengLogin', '~> 1.2.7'
+    c.dependency 'CleengLogin', '~> 1.2.6'
 
   end
 

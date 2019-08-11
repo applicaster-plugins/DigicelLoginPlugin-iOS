@@ -77,7 +77,7 @@ class DigicelUser: NSObject {
         userType = type!
     }
     
-    enum UserType {
-        case Free,Basic,Premium
+    enum UserType : String {
+        case Free = "free",Basic = "basic" ,Premium = "premium"
     }
 }
