@@ -65,9 +65,7 @@ import CleengLogin
      */
     
     public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
-        
        cleengLogin.isUserComply(policies: policies, completion: completion)
-       
     }
     
     //check if user can see item or need to login / buy subscription
@@ -170,7 +168,14 @@ import CleengLogin
             completion?()
             return
         }
-
+        
+        if (APAuthorizationManager.sharedInstance()?.authorizationTokens()["179"] as? String == nil && (UserDefaults.standard.string(forKey: "userType") != nil)){
+            let digicelApi = DigicelLoginApi(configurationJSON: configurationJSON)
+            digicelApi.freeAccessToken { (success) in
+                
+            }
+        }
+        
         var presentLogin = false
         if let flag = startOnAppLaunch as? Bool {
             presentLogin = flag
@@ -316,10 +321,10 @@ import CleengLogin
                 if succeeded == true {
                     digicelApi.registerToCleeng(api: self.getCleengApi(), completion: { (succeeded, error) in
                         if succeeded == true {
+                            digicelApi.currentDigicelUser?.userType = .Basic
+                            UserDefaults.standard.set(DigicelUser.UserType.Basic.rawValue, forKey: "userType")
                             digicelApi.freeAccessToken(completion: { (sucsses) in
                                 if(sucsses){
-                                    digicelApi.currentDigicelUser?.userType = .Basic
-                                    UserDefaults.standard.set(DigicelUser.UserType.Basic.rawValue, forKey: "userType")
                                     if self.isFreeAccess() == true {
                                        if  let vc = self.navigationController?.viewControllers.first{
                                         vc.dismiss(animated: false, completion: {

@@ -221,14 +221,18 @@ class DigicelLoginApi {
        let tokenUrl = "sportsmaxds://fetchData?type=SPORTSMAX_TOKEN&url=" + base64URL ;
        let atom =   APAtomFeed.init(url: tokenUrl)
         APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
-            if let token  = model?.extensions["auth_token"] as? String{
-                APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: "179")
-                completion(true)
+            if(sucsses){
+                if let token  = model?.extensions["auth_token"] as? String{
+                    APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: "179")
+                    CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
+                    completion(true)
+                }else{
+                    completion(false)
+                }
             }else{
                 completion(false)
             }
         }
-        
     }
     
     func cleengRegisterCustomer(withEmail email: String, api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
