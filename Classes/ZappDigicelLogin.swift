@@ -68,6 +68,35 @@ import CleengLogin
        cleengLogin.isUserComply(policies: policies, completion: completion)
     }
     
+    
+    public func handleUrlScheme(_ params: NSDictionary) {
+        guard let action = params["action"] as? String else{
+            return
+        }
+        switch action {
+        case "login":
+            if(getUserToken() != ""){
+                displayErrorAlert(message: .alreadyLogin)
+            }else{
+                login(nil) { (bool) in
+                    
+                }
+            }
+        case "logout":
+            if(getUserToken() != ""){
+                logout { (bool) in
+                    
+                }
+            }else{
+                displayErrorAlert(message: .alreadyLogout)
+                }
+        default:
+            return
+        }
+    }
+   
+   
+    
     //check if user can see item or need to login / buy subscription
     public func itemIsLocked(policies: [String : NSObject]) -> Bool{
         if let isfree = policies["free"] as? Bool{
@@ -135,10 +164,10 @@ import CleengLogin
         return false
     }
     
-    func displayErrorAlert(){
-        let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
-        let message = self.configuration?.localization.localizedString(for: .errorInternalMessage)
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    func displayErrorAlert(message: ZappDigicelLoginLocalization.Key = .errorInternalMessage){
+       // let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
+        let message = self.configuration?.localization.localizedString(for: message)
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: self.configuration?.localization.localizedString(for: .alertCancelAction, defaultString: NSLocalizedString("OK", comment: "Cancel")), style: .cancel, handler: { [weak self] _ in
              guard let strongSelf = self else { return }
             if let vc = strongSelf.navigationController?.presentingViewController {
@@ -148,6 +177,8 @@ import CleengLogin
         }))
         if let vc = self.navigationController?.viewControllers.first{
             vc.present(alert, animated: true, completion: nil)
+        }else{
+            APApplicasterController.sharedInstance().rootViewController.topmostModal().present(alert, animated: true)
         }
     }
     

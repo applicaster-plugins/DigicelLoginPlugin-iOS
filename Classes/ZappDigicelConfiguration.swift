@@ -91,6 +91,8 @@ public struct ZappDigicelLoginLocalization {
         case alertRetryAction = "cleeng_login_alert_retry_action"
         case alertOKAction = "cleeng_login_alert_ok_action"
         
+        case alreadyLogin = "already_login_error_message"
+        case alreadyLogout = "already_logout_error_message"
         case errorInternalTitle = "cleeng_login_error_internal_title"
         case errorInvalideCustomerDataOrPasswordMissingTitle = "cleeng_login_error_credentials_title"
         case errorExpiredTokenTitle = "cleeng_login_error_expired_title"
