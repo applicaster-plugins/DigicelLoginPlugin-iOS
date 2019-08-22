@@ -12,6 +12,7 @@ import ZappLoginPluginsSDK
 
 let kCallbackURL = "https://applicaster.sportsmax";
 let kCallBackMailURL = "https://digicelid.digicelgroup.com/management/identity.do?"
+let kCallBackCodeURL = "https://digicelid.digicelgroup.com/otp/verify.do"
 
 public protocol DigicelRedirectUriProtocol {
     func handleRedirectUriWith(params: [String : Any]?)

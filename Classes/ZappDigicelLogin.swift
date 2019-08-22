@@ -14,6 +14,8 @@ import SwiftyStoreKit
 import CleengLogin
 
 @objc public class ZappDigicelLogin : NSObject, ZPLoginProviderUserDataProtocol, ZPAppLoadingHookProtocol,APTimedWebViewControllerDelegate, DigicelRedirectUriProtocol, DigicelBaseProtocol {
+   
+    
     
     /// Cleeng publisher identifier. **Required**
     private var cleengPublisherId: String!
@@ -65,7 +67,12 @@ import CleengLogin
      */
     
     public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
-       cleengLogin.isUserComply(policies: policies, completion: completion)
+        if(isFreeAccess() && (userType == .Basic || userType == .Premium)){
+             completion(true)
+        }else{
+            completion(false)
+           // cleengLogin.isUserComply(policies: policies, completion: completion)
+        }
     }
     
     
@@ -131,9 +138,9 @@ import CleengLogin
     /**
      `ZPLoginProviderUserDataProtocol` api. Call this to check if user has access to one or more items.
      */
-    public func isUserComply(policies: [String : NSObject]) -> Bool {
-        return itemIsLocked(policies: policies)
-    }
+//    public func isUserComply(policies: [String : NSObject]) -> Bool {
+//        return itemIsLocked(policies: policies)
+//    }
     
     public func canPlayItem() -> Bool{
         if(isFreeAccess() && (userType == .Basic || userType == .Premium)){
@@ -333,7 +340,6 @@ import CleengLogin
                 digicelWebViewController.addChildViewController(digicelWebViewController.webLoginVC, to: digicelWebViewController.webContainerView)
                 webViewVC.loadTargetURL()
             }
-           
         }
     }
     
@@ -348,8 +354,6 @@ import CleengLogin
     
     func continueSubscriptionFlow(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
         if let digicelApi = digicelApi {
-            digicelApi.getUserSubscriptions(completion: { (succeeded, response, error) in
-                if succeeded == true {
                     digicelApi.registerToCleeng(api: self.getCleengApi(), completion: { (succeeded, error) in
                         if succeeded == true {
                             digicelApi.currentDigicelUser?.userType = .Basic
@@ -370,12 +374,6 @@ import CleengLogin
                                             })
                                         }
                                     }
-                                }else{
-                                     self.displayErrorAlert()
-                                     completion(false, error)
-                                }
-                            })
-                           
                         }
                         else {
                              self.displayErrorAlert()
@@ -388,6 +386,30 @@ import CleengLogin
                     completion(false, error)
                 }
             })
+        }
+    }
+    
+    func showOffersViewController(){
+        let bundle = Bundle.init(for: type(of: self))
+        let offersVC = DigicelOffersViewController(nibName: "DigicelOffersViewController", bundle: bundle)
+        offersVC.delegate = self
+        if let _ = self.digicelWebViewController{
+            navigationController?.present(offersVC, animated: true, completion: nil)
+           
+        }else{
+            navigationController = UINavigationController(rootViewController: offersVC)
+            if let navController = navigationController{
+                navController.setNavigationBarHidden(true, animated: false)
+                APApplicasterController.sharedInstance().rootViewController.topmostModal().present(navController,
+                                                                                                   animated: true) {
+                }
+            }
+        }
+    }
+    
+    func closeOnlyLoginScreen(){
+        if  let vc = self.navigationController?.viewControllers.first{
+            vc.dismiss(animated: false, completion: nil)
         }
     }
     
