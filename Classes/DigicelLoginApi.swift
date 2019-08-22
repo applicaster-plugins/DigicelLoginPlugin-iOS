@@ -140,7 +140,7 @@ class DigicelLoginApi {
                     }
                 }
                 strongSelf.currentDigicelUser?.set(activePlans: activePlans)
-                completion(true, response, nil)
+                completion(true, activePlans, nil)
             } else {
                 completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
             }
@@ -207,8 +207,12 @@ class DigicelLoginApi {
         let params: [String:Any] = ["email" : email , "planId" : plan.planId , "subscriptionId" : plan.subscriptionId , "dateEnd" : plan.dateEnd ]
         request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
         
-        makeRequest(request: request) { [weak self] (response, _, error) in
-            let res = response as? [String : Any]
+        makeRequest(request: request) { [weak self] (reasult,  response, error) in
+            if (response?.statusCode == 200){
+                completion(true, nil)
+            }else{
+                 completion(false, nil)
+            }
         }
     }
     
