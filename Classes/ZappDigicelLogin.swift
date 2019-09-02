@@ -494,14 +494,14 @@ import ZappPlugins
     func getCleengApi() -> CleengLoginAndSubscribeApi? {
         var cleengApi: CleengLoginAndSubscribeApi
         
-        if let api = cleengLogin.getApi() {
-            cleengApi = api
-        }
-        else {
+//        if let api = cleengLogin.getApi() {
+//            cleengApi = api
+//        }
+//        else {
             let item = EmptyAPPurchasableItem()
             let api = CleengLoginAndSubscribeApi(item: item, publisherId: cleengPublisherId)
             cleengApi = api
-        }
+     //   }
         cleengApi.cleengLoginState = .loggedIn
         return cleengApi
     }
