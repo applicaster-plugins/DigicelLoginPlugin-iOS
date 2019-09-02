@@ -133,7 +133,7 @@ import ZappPlugins
         }
         
         if(validForFreePass()){
-            return false
+            return true
        }else{
          cleengLogin.isUserComply(policies: policies, completion: { (success) in
               result =  success
