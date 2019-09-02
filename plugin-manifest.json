@@ -402,6 +402,31 @@
       "tooltip_text": "Digital subscription item submit button."
     },
     {
+      "type": "text",
+      "key": "Sportsmax_offer_id",
+      "tooltip_text": "Sportsmax offer id"
+    },
+    {
+      "type": "text",
+      "key": "digicel_user_access_auth_id",
+      "tooltip_text": "Digicel user access authorization id for user's type Premium."
+    },
+    {
+      "type": "text",
+      "key": "digicel_free_access_auth_id",
+      "tooltip_text": "Digicel free access authorization id for user's type Basic."
+    },
+    {
+      "type": "text",
+      "key": "digicel_base_url",
+      "tooltip_text": "digicel base url for api"
+    },
+    {
+      "type": "text",
+      "key": "cleeng_publisher_token",
+      "tooltip_text": "cleeng publisher token"
+    },
+    {
       "type": "checkbox",
       "key": "logged_in_free_access",
       "tooltip_text": "Flag to indicate if login only gets free access"
