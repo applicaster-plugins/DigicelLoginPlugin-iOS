@@ -7,6 +7,7 @@
 
 import Foundation
 import ZappPlugins
+import UIKit
 
 class DigicelLoginWebViewController : UIViewController {
 
@@ -30,12 +31,22 @@ class DigicelLoginWebViewController : UIViewController {
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
+    
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        get {
+            return .portrait
+        }
+    }
+    
+    override var shouldAutorotate: Bool {
+        return  false
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         backButton.setTitle(nil, for: .normal)
         backButton.backgroundColor = UIColor.clear
-        
+        self.navigationController?.delegate = self
         closeButton.setTitle(nil, for: .normal)
         closeButton.backgroundColor = UIColor.clear
         
@@ -60,5 +71,12 @@ class DigicelLoginWebViewController : UIViewController {
         if let delegate = delegate {
             delegate.userDidSelectToClose()
         }
+    }
+}
+
+
+extension UIViewController: UINavigationControllerDelegate {
+    public func navigationControllerSupportedInterfaceOrientations(_ navigationController: UINavigationController) -> UIInterfaceOrientationMask {
+        return .portrait
     }
 }

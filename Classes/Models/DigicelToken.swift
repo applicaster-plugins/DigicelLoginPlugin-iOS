@@ -34,4 +34,8 @@ class DigicelToken: NSObject {
 
     }
     
+    override init() {
+        super.init()
+    }
+    
 }

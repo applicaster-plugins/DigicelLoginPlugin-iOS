@@ -35,7 +35,13 @@ class DigicelUser: NSObject {
     var enabled: Bool?
     var international: Bool?
     var digicelActivePlans: [DigicelPlan]?
+    var subscriberType: SubscriberType?
 
+    
+    override init() {
+        super.init()
+    }
+    
     init(userEmail:String) {
         super.init()
         email = userEmail
@@ -77,7 +83,13 @@ class DigicelUser: NSObject {
         userType = type!
     }
     
-    enum UserType : String {
-        case Free = "free",Basic = "basic" ,Premium = "premium"
+    enum UserType: String {
+        case Free = "free", Basic = "basic", Premium = "premium"
     }
+    
+    enum SubscriberType: String{
+        case InNetwotk = "inNetwotk", OffNetwork = "offNetwork"
+    }
+    
+    
 }

@@ -16,24 +16,14 @@ let kDigicelLoginAndSubscribeApiErrorDomain = "DigicelLoginAndSubscribeApi"
 class DigicelLoginApi {
     
     public var configurationJSON: NSDictionary?
-
-    public var cleengLogin: ZappCleengLogin?
-
     var currentDigicelUser: DigicelUser?
-    
     var digicelToken: DigicelToken?
-
     /// Cleeng publisher id
     let publisherId: String
-    
     let cleengWebServiceURL: String = "https://applicaster-cleeng-sso.herokuapp.com"
-    
-    let digiCelWebServiceURL = "https://digicelid.digicelgroup.com/selfcarev2"
-    
+    let digiCelWebServiceURL: String
     let digicelRedirectUri = "https://applicaster.sportsmax/auth/"
-    
     let digicelSecretKey: String
-    
     let digicelClientID: String
 
 
@@ -48,6 +38,24 @@ class DigicelLoginApi {
         
         let digicelClientID: String! = configurationJSON?["digicel_client_id"] as? String
         self.digicelClientID = digicelClientID
+        
+        self.digiCelWebServiceURL = configurationJSON?["digicel_base_url"] as? String ?? "https://digicelid.digicelgroup.com/selfcarev2"
+        
+        self.configurationJSON = configurationJSON
+        self.currentDigicelUser = DigicelUser()
+        if let digicelToken  = DigicelCredentialsManager.getDigicelUserToken(){
+            self.digicelToken = DigicelToken()
+            self.digicelToken?.accessToken = digicelToken
+        }
+        if let userEmail  = DigicelCredentialsManager.getDigicelUserEmail(){
+            currentDigicelUser?.email = userEmail
+        }
+        if let userType = DigicelCredentialsManager.getDigicelUserType(){
+            currentDigicelUser?.userType = userType
+        }
+        if let subscriptionType = DigicelCredentialsManager.getDigicelSubscriberType(){
+            currentDigicelUser?.subscriberType = subscriptionType
+        }
     }
     
     //MARK: - Digicel API'S
@@ -74,6 +82,7 @@ class DigicelLoginApi {
                 }
                 let dgToken = DigicelToken.init(dict: response)
                 strongSelf.digicelToken = dgToken
+                DigicelCredentialsManager.saveDigicelUserToken(token: token)
                 completion(true, token ,nil)
             } else {
                 completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
@@ -109,16 +118,14 @@ class DigicelLoginApi {
             completion(false, nil, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
             return
         }
-        
         let apiName = "me/provisioning/subscriptions?status=active"
         let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
         let request = NSMutableURLRequest(url: url)
         request.httpMethod = "GET"
-        
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("en_US", forHTTPHeaderField: "Lang")
         request.setValue("5000341", forHTTPHeaderField: "AndroidVer")
-        request.setValue("ANDROID", forHTTPHeaderField: "Source")
+        request.setValue("SPORTSMAX", forHTTPHeaderField: "Source")
         request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
         request.setValue("no-cach", forHTTPHeaderField: "Cache-Control")
 
@@ -130,11 +137,14 @@ class DigicelLoginApi {
                 var activePlans = [DigicelPlan]()
                 for index in 0..<response.count {
                     if  let plan = response[index] as? [String : Any],
-                        let subscriptions = plan["subscriptions"] as? [Any] {
+                        let subscriptions = plan["subscriptions"] as? [Any]{
                         for i in 0..<subscriptions.count {
-                            if let subscription = subscriptions[i] as? [String : Any],
-                                let digicelPlan = DigicelPlan.init(dict: subscription) {
-                                activePlans.append(digicelPlan)
+                            if (plan["groupName"] as? String == "SPORTSMAX"){
+                                if let subscription = subscriptions[i] as? [String : Any],
+                                    let digicelPlan = DigicelPlan.init(dict: subscription) {
+                                    activePlans.append(digicelPlan)
+                                    DigicelCredentialsManager.saveDigicelPlanes(dic: subscription)
+                                }
                             }
                         }
                     }
@@ -197,24 +207,56 @@ class DigicelLoginApi {
     
     //
     func cleengUpdateUserPackages(withEmail email: String , plan: DigicelPlan , completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)){
-        let apiName = "https://c9brkksqb8.execute-api.eu-west-1.amazonaws.com/stage/subscriptions/create"
+        let cleengPublisherToken = configurationJSON?["cleeng_publisher_token"] as? String ?? "ZNXDbmhgC6tL9w5eZzWybTCvniw_b-sIcQz4JlEroAsRq457"
+        let apiName = "https://v0f6004sjg.execute-api.us-west-2.amazonaws.com/prod/subscriptions/create"
         let url = URL(string: apiName)!
         let request = NSMutableURLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(publisherId)", forHTTPHeaderField: "Authorization")
-        
-        let params: [String:Any] = ["email" : email , "planId" : plan.planId , "subscriptionId" : plan.subscriptionId , "dateEnd" : plan.dateEnd ]
+        request.setValue("Bearer \(cleengPublisherToken)", forHTTPHeaderField: "Authorization")
+        guard let planId = plan.planId , let subscriptionId = plan.subscriptionId , let dateEnd = plan.dateEnd else {
+            return
+        }
+        let params: [String:Any] = ["email" : email , "planId" : planId , "subscriptionId" : subscriptionId , "dateEnd" : dateEnd ]
         request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
-        
         makeRequest(request: request) { [weak self] (reasult,  response, error) in
             if (response?.statusCode == 200){
+                if let response = reasult as? [String:Any] , let offerid = response["cleengOfferId"] as? String{
+                    DigicelCredentialsManager.saveDigicelPlanOfferId(type: offerid)
+                }
                 completion(true, nil)
             }else{
                  completion(false, nil)
             }
         }
     }
+    
+    func getSubscriberType(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)){
+        guard let digicelToken = digicelToken,
+            let accessToken = digicelToken.accessToken else {
+                completion(false, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
+                return
+        }
+        let apiname = "me/profile/subscribertype"
+        let url = URL(string: "\(digiCelWebServiceURL)/\(apiname)")
+        let request = NSMutableURLRequest(url: url!)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("en", forHTTPHeaderField: "Lang")
+        request.setValue("no-cach", forHTTPHeaderField: "Cache-Control")
+        request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
+        
+        makeRequest(request: request) { [weak self] (result, response, error) in
+            if (response?.statusCode == 200){
+                self?.currentDigicelUser?.subscriberType = .InNetwotk
+                completion(true,error)
+            }else if(response?.statusCode == 404){
+                self?.currentDigicelUser?.subscriberType = .OffNetwork
+                completion(true,error)
+            }
+            DigicelCredentialsManager.saveDigicelSubscriberType(type: self?.currentDigicelUser?.subscriberType)
+        }
+     }
     
     func freeAccessToken(completion: @escaping ((_ succeeded: Bool) -> Void)){
        let timestamp = NSDate().addingDays(30)?.timeIntervalSince1970
@@ -228,6 +270,34 @@ class DigicelLoginApi {
             if(sucsses){
                 if let token  = model?.extensions["auth_token"] as? String{
                     APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: "179")
+                    CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
+                    completion(true)
+                }else{
+                    completion(false)
+                }
+            }else{
+                completion(false)
+            }
+        }
+    }
+    
+    func generateTokenForDigicelPlan(dateEnd: Int64 ,completion: @escaping ((_ succeeded: Bool) -> Void)){
+        guard let authId = configurationJSON?["digicel_user_access_auth_id"] as? String else{
+            completion(false)
+            return
+        }
+        
+        let timestamp = NSDate().timeIntervalSince1970 + Double(exactly: dateEnd)!
+        let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
+        let url = "timestamp=\(timestamp)&uuid=\(uuid!)"
+        let data = (url).data(using: String.Encoding.utf8)
+        let base64URL = data!.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
+        let tokenUrl = "sportsmaxds://fetchData?type=SPORTSMAX_TOKEN&url=" + base64URL ;
+        let atom =   APAtomFeed.init(url: tokenUrl)
+        APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
+            if(sucsses){
+                if let token  = model?.extensions["auth_token"] as? String{
+                    APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: authId)
                     CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
                     completion(true)
                 }else{
@@ -341,6 +411,7 @@ class DigicelLoginApi {
                             // Create digicel user
                             let user = DigicelUser.init(dict: response)
                             self.currentDigicelUser = user
+                            DigicelCredentialsManager.saveDigicelUserEmail(email: user?.email)
                             return completion(true, response, nil)
                         }
                         else {
