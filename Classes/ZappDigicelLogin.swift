@@ -55,6 +55,7 @@ import ZappPlugins
         if(didComeBackFromDigicelOffers){
             checkForDigicelSubscruptions()
             APApplicasterController.sharedInstance().rootViewController.topmostModal()?.children.first?.dismiss(animated: false, completion: nil)
+            didComeBackFromDigicelOffers = false
         }
     }
     
@@ -67,11 +68,16 @@ import ZappPlugins
                     self.digicelApi?.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
                         if let date = plan.dateEnd{
                             self.digicelApi?.generateTokenForDigicelPlan(dateEnd: date, completion: { (success) in
-                                
+                                if success{
+                                    self.loginCompletion?(.completedSuccessfully)
+                                }
                             })
                         }
                     })
                 }
+            }else{
+                self.digicelApi?.currentDigicelUser?.userType = .Basic
+                DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
             }
         })
     }

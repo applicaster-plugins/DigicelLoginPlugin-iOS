@@ -423,6 +423,11 @@
     },
     {
       "type": "text",
+      "key": "digicel_subscription_url",
+      "tooltip_text": "digicel subscription item url"
+    },
+    {
+      "type": "text",
       "key": "cleeng_publisher_token",
       "tooltip_text": "cleeng publisher token"
     },
