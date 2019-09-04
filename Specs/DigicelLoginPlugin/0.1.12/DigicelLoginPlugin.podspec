@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                = 'DigicelLoginPlugin'
-  s.version             = '0.1.11'
+  s.version             = '0.1.12'
   s.summary             = 'A plugin for DigiCel login & subscription for Zapp iOS.'
   s.description         = 'Plugin to make login & subscription with DigiCel for Zapp iOS'
   s.homepage            = 'https://github.com/applicaster-plugins/DigicelLoginPlugin-iOS'
