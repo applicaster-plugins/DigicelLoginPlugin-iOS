@@ -184,13 +184,13 @@ import ZappPlugins
     }
     
     func showSubscription(){
-        let digicelUser = digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk
+        //let digicelUser = digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk
         if let offersNav = offersNavagationController{
-             offersNav.digicelInNetworkUser = digicelUser
+             offersNav.digicelInNetworkUser = true
              APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNav, animated: true)
         }else{
             offersNavagationController = CleengLoginAndSubscriptionController(startWith: .subscriptionsList, api: getCleengApi()!, configuration: cleengLogin.configuration)
-            offersNavagationController?.digicelInNetworkUser = digicelUser
+            offersNavagationController?.digicelInNetworkUser = true
             APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNavagationController!, animated: true)
         }
     }

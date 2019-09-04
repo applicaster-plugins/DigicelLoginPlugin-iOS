@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                = 'DigicelLoginPlugin'
-  s.version             = '0.1.12'
+  s.version             = '0.1.11'
   s.summary             = 'A plugin for DigiCel login & subscription for Zapp iOS.'
   s.description         = 'Plugin to make login & subscription with DigiCel for Zapp iOS'
   s.homepage            = 'https://github.com/applicaster-plugins/DigicelLoginPlugin-iOS'
@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
     # }
     c.dependency 'ZappPlugins'
     c.dependency 'ApplicasterSDK'
-    c.dependency 'CleengLogin', '~> 1.2.7'
+    c.dependency 'CleengLogin', '~> 1.2.6'
 
   end
 

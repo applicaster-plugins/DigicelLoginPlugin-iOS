@@ -7,7 +7,7 @@
     "require_startup_execution": true
   },
   "dependency_repository_url": [
-    "https://github.com/applicaster-plugins/DigicelLoginPlugin-iOS",
+    "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git",
     "git@github.com:applicaster/login-plugin-cleeng-ios.git"
   ],
   "platform": "ios",
