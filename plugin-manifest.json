@@ -13,7 +13,7 @@
   "platform": "ios",
   "author_name": "Miri Vecselboim",
   "author_email": "m.vecselboim@applicaster.com",
-  "manifest_version": "0.1.0",
+  "manifest_version": "0.2.0",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
@@ -21,11 +21,11 @@
   "identifier": "DigicelLoginPlugin",
   "ui_builder_support": true,
   "dependency_name": "DigicelLoginPlugin",
-  "dependency_version": "0.1.0",
+  "dependency_version": "1.0.0",
   "whitelisted_account_ids": [
     "5af949534da8f300080050f9"
   ],
-  "min_zapp_sdk": "11.2.0-Dev",
+  "min_zapp_sdk": "12.0.0-Dev",
   "deprecated_since_zapp_sdk": "",
   "unsupported_since_zapp_sdk": "",
   "supported_nav_items": [],
@@ -420,6 +420,11 @@
       "type": "text",
       "key": "digicel_base_url",
       "tooltip_text": "digicel base url for api"
+    },
+    {
+      "type": "text",
+      "key": "digicel_logout_url",
+      "tooltip_text": "digicel logout url"
     },
     {
       "type": "text",
