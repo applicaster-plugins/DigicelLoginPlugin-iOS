@@ -112,7 +112,9 @@ import ZappPlugins
         case "logout":
             if(getUserToken() != ""){
                 logout { (bool) in
-                    
+                    if let logoutUrl = self.configurationJSON?["digicel_logout_url"] as? String {
+                        self.presentWebViewWith(url: logoutUrl)
+                    }
                 }
             }else{
                 displayErrorAlert(message: .alreadyLogout)
@@ -397,6 +399,21 @@ import ZappPlugins
                 digicelWebViewController.webLoginVC = webViewVC
                 digicelWebViewController.addChildViewController(digicelWebViewController.webLoginVC, to: digicelWebViewController.webContainerView)
                 webViewVC.loadTargetURL()
+            }else{
+                let bundle = Bundle.init(for: type(of: self))
+                let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
+                loginWebViewController.delegate = self
+                digicelWebViewController = loginWebViewController
+                navigationController = UINavigationController(rootViewController: loginWebViewController)
+                if let navController = navigationController {
+                    navController.setNavigationBarHidden(true, animated: false)
+                }
+                loginWebViewController.webLoginVC = webViewVC
+                APApplicasterController.sharedInstance().rootViewController.topmostModal().present(navigationController!,
+                                                                                                   animated: true) {
+                                                                                                    
+                                                                                                    webViewVC.loadTargetURL()
+                }
             }
         }
     }
@@ -419,6 +436,12 @@ import ZappPlugins
                             digicelApi.getSubscriberType(completion: { (inNetwotk, error) in
                                 if (inNetwotk){
                                     digicelApi.getUserSubscriptions(completion: { (succeeded, plans, error) in
+                                        if (!succeeded){
+                                            self.closeOnlyLoginScreen(completion: {
+                                                completion(false, error)
+                                                return
+                                            })
+                                        }
                                         if(plans?.count == 0){
                                             self.closeOnlyLoginScreen(completion: {
                                                  completion(false, error)
@@ -451,14 +474,16 @@ import ZappPlugins
                                     }else{
                                         self.closeOnlyLoginScreen(completion: {
                                             completion(false, error)
+                                            self.showSubscription()
                                         })
                                     }
                                 }
                             })
                 }
                 else {
-                     self.displayErrorAlert()
-                    completion(false, error)
+                    self.closeOnlyLoginScreen(completion: {
+                        completion(false, error)
+                    })
                 }
             })
         }

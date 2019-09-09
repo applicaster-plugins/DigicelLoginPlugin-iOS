@@ -252,7 +252,7 @@ class DigicelLoginApi {
                 completion(true,error)
             }else if(response?.statusCode == 404){
                 self?.currentDigicelUser?.subscriberType = .OffNetwork
-                completion(true,error)
+                completion(false,error)
             }
             DigicelCredentialsManager.saveDigicelSubscriberType(type: self?.currentDigicelUser?.subscriberType)
         }
