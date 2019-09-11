@@ -166,7 +166,7 @@ import ZappPlugins
         loginCompletion = completion
         if (digicelApi?.currentDigicelUser?.userType != .Free){
             didComeBackFromDigicelOffers = true
-            self.showSubscription()
+            showSubscription()
         }else{
             createNavigationControllerWithWebLogin()
         }
@@ -186,15 +186,9 @@ import ZappPlugins
     }
     
     func showSubscription(){
-        //let digicelUser = digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk
-        if let offersNav = offersNavagationController{
-             offersNav.digicelInNetworkUser = true
-             APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNav, animated: true)
-        }else{
-            offersNavagationController = CleengLoginAndSubscriptionController(startWith: .subscriptionsList, api: getCleengApi()!, configuration: cleengLogin.configuration)
-            offersNavagationController?.digicelInNetworkUser = true
-            APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNavagationController!, animated: true)
-        }
+        offersNavagationController = CleengLoginAndSubscriptionController(startWith: .subscriptionsList, api: getCleengApi()!, configuration: cleengLogin.configuration)
+        offersNavagationController?.digicelUserSubscription = true
+        APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNavagationController!, animated: true)
     }
     
     // internal error for login flaw
@@ -445,6 +439,7 @@ import ZappPlugins
                                         if(plans?.count == 0){
                                             self.closeOnlyLoginScreen(completion: {
                                                  completion(false, error)
+                                                self.didComeBackFromDigicelOffers = true
                                                 self.showSubscription()
                                             })
                                         }else{
@@ -474,6 +469,7 @@ import ZappPlugins
                                     }else{
                                         self.closeOnlyLoginScreen(completion: {
                                             completion(false, error)
+                                            self.didComeBackFromDigicelOffers = true
                                             self.showSubscription()
                                         })
                                     }
@@ -525,15 +521,14 @@ import ZappPlugins
     func getCleengApi() -> CleengLoginAndSubscribeApi? {
         var cleengApi: CleengLoginAndSubscribeApi
         
-//        if let api = cleengLogin.getApi() {
-//            cleengApi = api
-//        }
-//        else {
+        if let api = cleengLogin.getApi() {
+            cleengApi = api
+        }
+        else {
             let item = EmptyAPPurchasableItem()
             let api = CleengLoginAndSubscribeApi(item: item, publisherId: cleengPublisherId)
             cleengApi = api
-     //   }
-        cleengApi.cleengLoginState = .loggedIn
+        }
         return cleengApi
     }
     
