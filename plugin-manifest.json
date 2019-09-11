@@ -437,6 +437,16 @@
       "tooltip_text": "cleeng publisher token"
     },
     {
+      "type": "text",
+      "key": "cleeng_login_alert_description",
+      "tooltip_text": "cleeng login alert description"
+    },
+    {
+      "type": "text",
+      "key": "cleeng_login_alert_title",
+      "tooltip_text": "cleeng login alert title"
+    },
+    {
       "type": "checkbox",
       "key": "logged_in_free_access",
       "tooltip_text": "Flag to indicate if login only gets free access"

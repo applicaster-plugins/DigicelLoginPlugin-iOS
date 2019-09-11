@@ -130,7 +130,7 @@ import ZappPlugins
      */
     public func isUserComply(policies: [String : NSObject]) -> Bool {
        
-        var result = false
+        var result = true
         
         if let freeValue = policies["free"] as? Bool {
             if freeValue {return true}
