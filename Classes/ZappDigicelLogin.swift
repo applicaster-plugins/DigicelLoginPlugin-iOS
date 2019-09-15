@@ -91,9 +91,23 @@ import ZappPlugins
      `ZPLoginProviderUserDataProtocol` api. Call this to check if user has access to one or more items.
      */
     
-//    public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
-//      cleengLogin.isUserComply(policies: policies, completion: completion)
-//    }
+    public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
+        cleengLogin.isUserComply(policies: policies) { (isComply) in
+            if let freeValue = policies["free"] as? Bool {
+                if freeValue {completion(true)}
+            }
+            
+            if let freeValue = policies["free"] as? String {
+                return (freeValue == "true") ? completion(true) : completion(false)
+            }
+            
+            if(self.validForFreePass()){
+                completion(true)
+            }else{
+                completion(isComply)
+            }
+        }
+    }
     
     
     public func handleUrlScheme(_ params: NSDictionary) {
@@ -122,32 +136,6 @@ import ZappPlugins
         default:
             return
         }
-    }
-    
-    
-    /**
-     `ZPLoginProviderUserDataProtocol` api. Call this to check if user has access to one or more items.
-     */
-    public func isUserComply(policies: [String : NSObject]) -> Bool {
-       
-        var result = true
-        
-        if let freeValue = policies["free"] as? Bool {
-            if freeValue {return true}
-        }
-        
-        if let freeValue = policies["free"] as? String {
-            return (freeValue == "true") ? true : false
-        }
-        
-        if(validForFreePass()){
-            return true
-       }else{
-         cleengLogin.isUserComply(policies: policies, completion: { (success) in
-              result =  success
-           })
-        }
-        return result
     }
     
     private func validForFreePass() -> Bool{
