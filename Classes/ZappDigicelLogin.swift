@@ -94,14 +94,17 @@ import ZappPlugins
     public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
         cleengLogin.isUserComply(policies: policies) { (isComply) in
             if let freeValue = policies["free"] as? Bool {
-                if freeValue {completion(true)}
+                if freeValue { return completion(true)}
             }
-            
+
             if let freeValue = policies["free"] as? String {
                 return (freeValue == "true") ? completion(true) : completion(false)
             }
             
-            if(self.validForFreePass()){
+            if (self.digicelApi?.currentDigicelUser?.userType == .Free){
+                completion(false)
+            }
+            else if(self.validForFreePass()){
                 completion(true)
             }else{
                 completion(isComply)
@@ -164,12 +167,26 @@ import ZappPlugins
      `ZPLoginProviderUserDataProtocol` api. Call this to logout from Cleeng.
      */
     public func logout(_ completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
-        cleengLogin.logout(completion)
-        DigicelCredentialsManager.saveDigicelUserType(type: .Free)
-        digicelApi?.currentDigicelUser?.userType = .Free
+        cleengLogin.logout { (logout) in
+            DigicelCredentialsManager.saveDigicelUserType(type: .Free)
+            self.digicelApi?.currentDigicelUser?.userType = .Free
+            completion(logout)
+        }
     }
     
     public func isAuthenticated() -> Bool {
+        return false
+    }
+    
+    func checkValidCleengSubscription() -> Bool{
+        let kCleengLoginDefaultTokenKey = "CleengLoginDefaultToken"
+        let tokens = APAuthorizationManager.sharedInstance()?.authorizationTokens()
+        let authIds = (tokens?.allKeys ?? []).filter({ $0 is String && ($0 as! String) != kCleengLoginDefaultTokenKey }) as! [String]
+        for authId in authIds {
+            if let tokenToValid = tokens?[authId] as? String, !(tokenToValid.isEmpty) {
+                return true
+            }
+        }
         return false
     }
     
@@ -425,11 +442,17 @@ import ZappPlugins
                                             })
                                         }
                                         if(plans?.count == 0){
-                                            self.closeOnlyLoginScreen(completion: {
-                                                 completion(false, error)
-                                                self.didComeBackFromDigicelOffers = true
-                                                self.showSubscription()
-                                            })
+                                            if(self.checkValidCleengSubscription()){
+                                                self.closeOnlyLoginScreen(completion: {
+                                                    completion(true, error)
+                                                })
+                                            }else{
+                                                self.closeOnlyLoginScreen(completion: {
+                                                    completion(false, error)
+                                                    self.didComeBackFromDigicelOffers = true
+                                                    self.showSubscription()
+                                                })
+                                            }
                                         }else{
                                             digicelApi.currentDigicelUser?.userType = .Premium
                                             DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
@@ -455,11 +478,17 @@ import ZappPlugins
                                             })
                                         })
                                     }else{
-                                        self.closeOnlyLoginScreen(completion: {
-                                            completion(false, error)
-                                            self.didComeBackFromDigicelOffers = true
-                                            self.showSubscription()
-                                        })
+                                        if(self.checkValidCleengSubscription()){
+                                            self.closeOnlyLoginScreen(completion: {
+                                                completion(true, error)
+                                            })
+                                        }else{
+                                            self.closeOnlyLoginScreen(completion: {
+                                                completion(false, error)
+                                                self.didComeBackFromDigicelOffers = true
+                                                self.showSubscription()
+                                            })
+                                        }
                                     }
                                 }
                             })
