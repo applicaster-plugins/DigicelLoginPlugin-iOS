@@ -41,7 +41,7 @@ import Foundation
     }
     
     static func getDigicelUserType() -> DigicelUser.UserType?{
-        let type = DigicelUser.UserType(rawValue: (UserDefaults.standard.string(forKey: CredentialsType.digicelUserType.rawValue) ?? ""))
+        let type = DigicelUser.UserType(rawValue: (UserDefaults.standard.string(forKey: CredentialsType.digicelUserType.rawValue) ?? DigicelUser.UserType.Free.rawValue ))
         return type
        
     }
