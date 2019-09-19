@@ -32,6 +32,7 @@ import ZappPlugins
     private var offersNavagationController: CleengLoginAndSubscriptionController?
     fileprivate var loginCompletion:(((_ status: ZPLoginOperationStatus) -> Void))?
     private var didComeBackFromDigicelOffers = false
+    
 
     public required override init() {
         super.init()
@@ -46,7 +47,6 @@ import ZappPlugins
         self.cleengPublisherId = publisherId
         self.configuration = ZappDigicelConfiguration(configuration: (configurationJSON as? [String:Any]) ?? [:])
         digicelApi = DigicelLoginApi(configurationJSON: configurationJSON)
-        
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(appMovedToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
@@ -101,13 +101,14 @@ import ZappPlugins
                 return (freeValue == "true") ? completion(true) : completion(false)
             }
             
-            if (self.digicelApi?.currentDigicelUser?.userType == .Free){
-                completion(false)
-            }
-            else if(self.validForFreePass()){
+             if(self.validForFreePass()){
                 completion(true)
             }else{
-                completion(isComply)
+                if (DigicelCredentialsManager.getDigicelUserType() == .Free){
+                    completion(false)
+                }else{
+                    completion(isComply)
+                }
             }
         }
     }
@@ -116,6 +117,11 @@ import ZappPlugins
     public func handleUrlScheme(_ params: NSDictionary) {
         guard let action = params["action"] as? String else{
             return
+        }
+        if let closeScreen = params["closeScreen"] as? String{
+            if (closeScreen == "true"){
+                
+            }
         }
         switch action {
         case "login":
@@ -148,14 +154,12 @@ import ZappPlugins
         return false
     }
     
-    //public fun
-    
     /**
      `ZPLoginProviderUserDataProtocol` api. Call this to present UI to let user make login (if needed) and IAP purchase (if needed).
      */
     public func login(_ additionalParameters: [String : Any]?, completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
         loginCompletion = completion
-        if (digicelApi?.currentDigicelUser?.userType != .Free){
+        if (DigicelCredentialsManager.getDigicelUserType() != .Free){
             didComeBackFromDigicelOffers = true
             showSubscription()
         }else{
@@ -167,9 +171,8 @@ import ZappPlugins
      `ZPLoginProviderUserDataProtocol` api. Call this to logout from Cleeng.
      */
     public func logout(_ completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
+        DigicelCredentialsManager.saveDigicelUserType(type: .Free)
         cleengLogin.logout { (logout) in
-            DigicelCredentialsManager.saveDigicelUserType(type: .Free)
-            self.digicelApi?.currentDigicelUser?.userType = .Free
             completion(logout)
         }
     }
@@ -242,7 +245,7 @@ import ZappPlugins
             }
         }
         
-       // check if digicel expierd
+       // check if digicel expierd // if they cancel ew need to check again
         if(getUserToken() != "" && digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk){
             if let sportmaxOfferId = configurationJSON?["Sportsmax_offer_id"] as? String , let offerId = DigicelCredentialsManager.getDigicelPlanOfferId(){
                 if(sportmaxOfferId == offerId){
@@ -265,7 +268,7 @@ import ZappPlugins
                                 })
                             }else{
                                 self.digicelApi?.currentDigicelUser?.userType = .Basic
-                                DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
+                                DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
                             }
                         }
                     }
