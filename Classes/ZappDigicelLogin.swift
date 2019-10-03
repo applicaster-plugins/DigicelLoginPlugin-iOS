@@ -103,12 +103,8 @@ import ZappPlugins
             
              if(self.validForFreePass()){
                 completion(true)
-            }else{
-                if (DigicelCredentialsManager.getDigicelUserType() == .Free){
-                    completion(false)
-                }else{
-                    completion(isComply)
-                }
+             }else{
+                completion(isComply)
             }
         }
     }
@@ -247,23 +243,17 @@ import ZappPlugins
         
        // check if digicel expierd // if they cancel ew need to check again
         if(getUserToken() != "" && digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk){
-            if let sportmaxOfferId = configurationJSON?["Sportsmax_offer_id"] as? String , let offerId = DigicelCredentialsManager.getDigicelPlanOfferId(){
-                if(sportmaxOfferId == offerId){
-                    if (!isTokenValid(token: getUserToken())){
-                        guard let api = digicelApi else{
-                         return
-                        }
-                        api.getUserSubscriptions { (success, response, error) in
+                        digicelApi?.getUserSubscriptions { (success, response, error) in
                             if(response?.count != 0){
-                                guard let email = api.currentDigicelUser?.email, let plan = response?.first as? DigicelPlan, let dateEnd = plan.dateEnd else{
+                                guard let email = self.digicelApi?.currentDigicelUser?.email, let plan = response?.first as? DigicelPlan, let dateEnd = plan.dateEnd else{
                                     return
                                 }
                                 self.digicelApi?.currentDigicelUser?.userType = .Premium
                                 DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
-                                api.generateTokenForDigicelPlan(dateEnd: dateEnd, completion: { (success) in
+                                self.digicelApi?.generateTokenForDigicelPlan(dateEnd: dateEnd, completion: { (success) in
                                     
                                 })
-                                api.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
+                                self.digicelApi?.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
                                     
                                 })
                             }else{
@@ -271,9 +261,6 @@ import ZappPlugins
                                 DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
                             }
                         }
-                    }
-                }
-            }
         }
         
         var presentLogin = false
