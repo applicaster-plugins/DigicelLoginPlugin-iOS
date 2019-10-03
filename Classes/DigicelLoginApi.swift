@@ -225,8 +225,17 @@ class DigicelLoginApi {
                     DigicelCredentialsManager.saveDigicelPlanOfferId(type: offerid)
                 }
                 completion(true, nil)
+            }else if (response?.statusCode == 400){
+                if let jsonResponse = reasult as? [String:Any] , let offerid = jsonResponse["errorMessage"] as? String, let offerFromPlugin = self?.configurationJSON?["Sportsmax_offer_id"] as? String {
+                    if(offerid.contains(offerFromPlugin)){
+                        DigicelCredentialsManager.saveDigicelPlanOfferId(type: offerFromPlugin)
+                        completion(true, nil)
+                    }else{
+                        completion(false, nil)
+                    }
+                }
             }else{
-                 completion(false, nil)
+                completion(false, nil)
             }
         }
     }
@@ -302,7 +311,7 @@ class DigicelLoginApi {
             if(sucsses){
                 if let token  = model?.extensions["auth_token"] as? String{
                     APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: authId)
-                    CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
+                   // CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
                     completion(true)
                 }else{
                     completion(false)
