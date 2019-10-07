@@ -49,6 +49,7 @@ import ZappPlugins
         digicelApi = DigicelLoginApi(configurationJSON: configurationJSON)
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(appMovedToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(finishSubcriptionPurchase), name: Notification.Name("didBuySubscription"), object: nil)
     }
     
     @objc func appMovedToForeground() {
@@ -56,6 +57,12 @@ import ZappPlugins
             checkForDigicelSubscruptions()
             APApplicasterController.sharedInstance().rootViewController.topmostModal()?.children.first?.dismiss(animated: false, completion: nil)
             didComeBackFromDigicelOffers = false
+        }
+    }
+    
+    @objc func finishSubcriptionPurchase(){
+        closeSubscriptionsScreen {
+            self.loginCompletion?(.completedSuccessfully)
         }
     }
     
@@ -512,6 +519,14 @@ import ZappPlugins
     
     func closeOnlyLoginScreen(completion: @escaping () -> ()){
         if  let vc = self.navigationController?.viewControllers.first{
+            vc.dismiss(animated: true) {
+                completion()
+            }
+        }
+    }
+    
+    func closeSubscriptionsScreen(completion: @escaping () -> ()){
+        if  let vc = self.offersNavagationController?.viewControllers.first{
             vc.dismiss(animated: true) {
                 completion()
             }
