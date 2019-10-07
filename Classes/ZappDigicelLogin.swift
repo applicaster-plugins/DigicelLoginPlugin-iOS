@@ -116,7 +116,11 @@ import ZappPlugins
         }
         if let closeScreen = params["closeScreen"] as? String{
             if (closeScreen == "true"){
-                
+            ZAAppConnector.sharedInstance().navigationDelegate.navigateToHomeScreen()
+                if let vc =  APApplicasterController.sharedInstance().rootViewController.topmostModal()?.children[1]{
+                    vc.removeFromParent()
+                    vc.view.removeFromSuperview()
+                }
             }
         }
         switch action {
@@ -131,12 +135,12 @@ import ZappPlugins
         case "logout":
             if(getUserToken() != ""){
                 logout { (bool) in
-                    if let logoutUrl = self.configurationJSON?["digicel_logout_url"] as? String {
-                        self.presentWebViewWith(url: logoutUrl)
+                    if let logInUrl = self.configurationJSON?["digicel_login_url"] as? String {
+                        self.deleteCookies(forURL: URL(string: logInUrl)!)
                     }
                 }
             }else{
-                displayErrorAlert(message: .alreadyLogout)
+              displayErrorAlert(message: .alreadyLogout)
                 }
         default:
             return
@@ -171,6 +175,20 @@ import ZappPlugins
         cleengLogin.logout { (logout) in
             completion(logout)
         }
+    }
+    
+    func deleteCookies(forURL url: URL) {
+        let cookieStorage = HTTPCookieStorage.shared
+        
+        for cookie in readCookie(forURL: url) {
+            cookieStorage.deleteCookie(cookie)
+        }
+    }
+    
+    func readCookie(forURL url: URL) -> [HTTPCookie] {
+        let cookieStorage = HTTPCookieStorage.shared
+        let cookies = cookieStorage.cookies(for: url) ?? []
+        return cookies
     }
     
     public func isAuthenticated() -> Bool {
