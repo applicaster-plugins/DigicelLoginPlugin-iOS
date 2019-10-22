@@ -389,7 +389,11 @@ import ZappPlugins
             navigationController = UINavigationController(rootViewController: loginWebViewController)
             if let navController = navigationController {
                navController.setNavigationBarHidden(true, animated: false)
-                if let webViewVC = DigicelTimedWebViewController(url: URL(string: (configurationJSON["digicel_login_url"] as? String)!)) {
+                let clientId = configurationJSON["digicel_client_id"] as? String ?? "765"
+                let loginUrl = configurationJSON["digicel_login_url"] as? String ?? "http://digicelid.digicelgroup.com/networkAuthentication.do"
+                let digicelScope = configurationJSON["digicel_scope"] as? String ?? "GET_FULL_ACCOUNT%2BGET_PLANS&lang=en"
+                let urlRequest = "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
+                if let webViewVC = DigicelTimedWebViewController(url: URL(string: urlRequest)) {
                     webViewVC.redirectUriDelegate = self
                     loginWebViewController.webLoginVC = webViewVC
                     APApplicasterController.sharedInstance().rootViewController.topmostModal().present(navController,
