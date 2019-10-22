@@ -48,8 +48,8 @@
     },
     {
       "type": "text",
-      "key": "cleeng_login_confirm_button",
-      "tooltip_text": "Text for login confirmation action button. For example: OK"
+      "key": "cleeng_login_subscribe",
+      "tooltip_text": "Text for subscribe confirmation action button. For example: subscribe"
     },
     {
       "type": "text",
@@ -60,16 +60,6 @@
       "type": "text",
       "key": "cleeng_login_error_internal_message",
       "tooltip_text": "Text for internal alert message. For example: Something went wrong"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_invalid_email_credentials_title",
-      "tooltip_text": "Text for alert title presented when Cleeng api returns error code 10"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_invalid_email_credentials_message",
-      "tooltip_text": "Text for alert message presented when Cleeng api returns error code 10"
     },
     {
       "type": "text",
@@ -225,16 +215,6 @@
       "type": "text",
       "key": "cleeng_publisher_token",
       "tooltip_text": "cleeng publisher token"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_alert_description",
-      "tooltip_text": "cleeng login alert description"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_alert_title",
-      "tooltip_text": "cleeng login alert title"
     },
     {
       "type": "checkbox",
