@@ -161,6 +161,11 @@
 			"key": "already_login_error_message",
 			"tooltip_text": "already login error message"
 		},
+    {
+      "type": "text",
+      "key": "logout_successfully_message",
+      "tooltip_text": "logout successfully message"
+    },
 		{
 			"type": "text",
 			"key": "already_logout_error_message",
