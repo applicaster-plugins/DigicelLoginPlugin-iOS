@@ -141,6 +141,7 @@ import ZappPlugins
             }
         case "logout":
             if(getUserToken() != ""){
+                displayErrorAlert(message: .logutSuccessfully)
                 logout { (bool) in
                     if let logInUrl = self.configurationJSON?["digicel_login_url"] as? String {
                         self.deleteCookies(forURL: URL(string: logInUrl)!)
