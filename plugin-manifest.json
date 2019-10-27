@@ -13,7 +13,7 @@
   "platform": "ios",
   "author_name": "Miri Vecselboim",
   "author_email": "m.vecselboim@applicaster.com",
-  "manifest_version": "0.2.0",
+  "manifest_version": "0.3.0",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
@@ -21,7 +21,7 @@
   "identifier": "DigicelLoginPlugin",
   "ui_builder_support": true,
   "dependency_name": "DigicelLoginPlugin",
-  "dependency_version": "1.0.0",
+  "dependency_version": "1.1.0",
   "whitelisted_account_ids": [
     "5af949534da8f300080050f9"
   ],

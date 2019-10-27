@@ -111,7 +111,11 @@ import ZappPlugins
              if(self.validForFreePass()){
                 completion(true)
              }else{
-                completion(isComply)
+                if(self.getUserToken() == ""){
+                    completion(false)
+                }else{
+                    completion(isComply)
+                }
             }
         }
     }
@@ -179,6 +183,7 @@ import ZappPlugins
      `ZPLoginProviderUserDataProtocol` api. Call this to logout from Cleeng.
      */
     public func logout(_ completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
+        APAuthorizationManager.sharedInstance()?.updateAuthorizationTokens(withAuthorizationProviders: nil)
         DigicelCredentialsManager.saveDigicelUserType(type: .Free)
         cleengLogin.logout { (logout) in
             completion(logout)
