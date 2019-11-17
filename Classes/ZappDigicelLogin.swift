@@ -262,6 +262,7 @@ import ZappPlugins
             completion?()
             return
         }
+       
         
         //check if free access and have free access token.  if not , generate.
         if let freeAccessAuthId = configurationJSON?["digicel_free_access_auth_id"] as? String{
@@ -496,7 +497,7 @@ import ZappPlugins
                                         }
                                     })
                                 }else{
-                                    if self.isFreeAccess(){
+                                    if true{
                                         digicelApi.freeAccessToken(completion: { (succeeded) in
                                             self.closeOnlyLoginScreen(completion: {
                                                 completion(true, error)

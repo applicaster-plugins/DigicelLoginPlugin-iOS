@@ -111,6 +111,33 @@ class DigicelLoginApi {
         }
     }
     
+    /// Call this api to get Digicel user account.
+       func getPlayAccountNumber(accessToken: String?, completion: @escaping ((_ succeeded: Bool, _ response: [String:Any]?, _ error: Error?) -> Void)) {
+           guard let accessToken = accessToken else {
+               completion(false, nil, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
+               return
+           }
+           let apiName = "account/play"
+           let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
+           let request = NSMutableURLRequest(url: url)
+           request.httpMethod = "GET"
+           request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            //   request.setValue("sportsmax", forHTTPHeaderField: "packageGroupName")
+           
+           makeRequest(request: request) { [weak self] (response, _, error) in
+               if let response = response as? [String:Any] {
+                if let test = response["playAccountList"] as? [Any]{
+                    if let test2 = test.first as? [String :Any]{
+                        print(test2)
+                    }
+                }
+                   completion(true, response, nil)
+               } else {
+                   completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
+               }
+           }
+       }
+    
     /// Call this api to get Digicel user Subscriptions.
     func getUserSubscriptions(completion: @escaping ((_ succeeded: Bool, _ response: [Any]?, _ error: Error?) -> Void)) {
         guard let digicelToken = digicelToken,
@@ -268,11 +295,11 @@ class DigicelLoginApi {
      }
     
     func freeAccessToken(completion: @escaping ((_ succeeded: Bool) -> Void)){
-        guard let freeAccessAuthId = configurationJSON?["digicel_user_access_auth_id"] as? String else {
+        guard let freeAccessAuthId = configurationJSON?["digicel_free_access_auth_id"] as? String else {
             completion(false)
             return
         }
-       let timestamp = NSDate().addingDays(30)?.timeIntervalSince1970
+       let timestamp = NSDate().addingDays(365)?.timeIntervalSince1970
        let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
        let url = "timestamp=\(timestamp!)&uuid=\(uuid!)"
        let data = (url).data(using: String.Encoding.utf8)
