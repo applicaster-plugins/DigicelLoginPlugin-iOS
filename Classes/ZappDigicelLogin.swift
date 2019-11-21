@@ -15,7 +15,9 @@ import CleengLogin
 import ZappPlugins
 
 
-@objc public class ZappDigicelLogin : NSObject, ZPLoginProviderUserDataProtocol, ZPAppLoadingHookProtocol,APTimedWebViewControllerDelegate, DigicelRedirectUriProtocol, DigicelBaseProtocol {
+@objc public class ZappDigicelLogin : NSObject, ZPLoginProviderUserDataProtocol, ZPAppLoadingHookProtocol,APTimedWebViewControllerDelegate, DigicelRedirectUriProtocol, DigicelBaseProtocol, LoginProtocol {
+   
+    
    
     /// Cleeng publisher identifier. **Required**
     private var cleengPublisherId: String!
@@ -32,6 +34,7 @@ import ZappPlugins
     private var offersNavagationController: CleengLoginAndSubscriptionController?
     fileprivate var loginCompletion:(((_ status: ZPLoginOperationStatus) -> Void))?
     private var didComeBackFromDigicelOffers = false
+    private var loginViewController:DigicelLoginViewController?
     
 
     public required override init() {
@@ -175,7 +178,7 @@ import ZappPlugins
             didComeBackFromDigicelOffers = true
             showSubscription()
         }else{
-            createNavigationControllerWithWebLogin()
+            showLoginScreen()
         }
     }
     
@@ -385,8 +388,7 @@ import ZappPlugins
         return retVal
     }
     
-    func createNavigationControllerWithWebLogin () {
-        
+    func showWebLoginOrRegister (register :Bool) {
         if let configurationJSON = configurationJSON {
             let bundle = Bundle.init(for: type(of: self))
             let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
@@ -398,7 +400,8 @@ import ZappPlugins
                 let clientId = configurationJSON["digicel_client_id"] as? String ?? "765"
                 let loginUrl = configurationJSON["digicel_login_url"] as? String ?? "http://digicelid.digicelgroup.com/networkAuthentication.do"
                 let digicelScope = configurationJSON["digicel_scope"] as? String ?? "GET_FULL_ACCOUNT%2BGET_PLANS&lang=en"
-                let urlRequest = "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
+                let registerUrl = configurationJSON["digicel_welcome_screen_create_account_link"] as? String ?? "https://digicelid.digicelgroup.com/register.do"
+                let urlRequest = register ? registerUrl : "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
                 if let webViewVC = DigicelTimedWebViewController(url: URL(string: urlRequest)) {
                     webViewVC.redirectUriDelegate = self
                     loginWebViewController.webLoginVC = webViewVC
@@ -408,6 +411,32 @@ import ZappPlugins
                                                                                                         webViewVC.loadTargetURL()
                     }
                 }
+            }
+        }
+    }
+    
+    func showLoginScreen(){
+        let bundle = Bundle.init(for: type(of: self))
+        loginViewController = DigicelLoginViewController(nibName: "DigicelLoginViewController", bundle: bundle)
+        if let loginController = loginViewController{
+            loginController.loginProtocol = self
+            loginController.configuration = self.configuration
+            APApplicasterController.sharedInstance()?.rootViewController.topmostModal()?.present(loginController, animated: true, completion: nil)
+        }
+    }
+    
+    func actionSelected(register: Bool) {
+        if let loginController = loginViewController{
+            loginController.dismiss(animated: true) {
+                self.showWebLoginOrRegister(register: register)
+            }
+        }
+    }
+    
+    func closeLoginScreen() {
+        if let loginController = loginViewController{
+            loginController.dismiss(animated: true) {
+
             }
         }
     }

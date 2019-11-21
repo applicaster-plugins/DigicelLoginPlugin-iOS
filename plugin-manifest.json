@@ -13,7 +13,7 @@
   "platform": "ios",
   "author_name": "Miri Vecselboim",
   "author_email": "m.vecselboim@applicaster.com",
-  "manifest_version": "0.4.0",
+  "manifest_version": "1.0.0",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
@@ -21,7 +21,7 @@
   "identifier": "DigicelLoginPlugin",
   "ui_builder_support": true,
   "dependency_name": "DigicelLoginPlugin",
-  "dependency_version": "1.2.0",
+  "dependency_version": "2.0.0",
   "whitelisted_account_ids": [
     "5af949534da8f300080050f9"
   ],
@@ -108,22 +108,17 @@
     },
     {
       "type": "text",
-      "key": "cleeng_subscription_screen_redeem_button_text",
-      "tooltip_text": "cleeng_subscription_screen_redeem_button_text"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_redeem_title",
+      "key": "cleeng_login_redeem_title",
       "tooltip_text": "cleeng_redeem_title"
     },
     {
       "type": "text",
-      "key": "cleeng_redeem_description",
+      "key": "cleeng_login_redeem_description",
       "tooltip_text": "cleeng_redeem_description"
     },
     {
       "type": "text",
-      "key": "cleeng_redeem_button_text",
+      "key": "cleeng_login_redeem_action",
       "tooltip_text": "cleeng_redeem_button_text"
     },
     {
@@ -230,6 +225,76 @@
       "type": "checkbox",
       "key": "enable_subscription_screen",
       "tooltip_text": "Flag to indicate if display the subscription screen"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_title",
+        "tooltip_text": "digicel welcome screen title"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_title_size",
+        "tooltip_text": "digicel welcome screen size"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_title_color",
+        "tooltip_text": "digicel welcome screen color"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_title_font",
+        "tooltip_text": "digicel welcome screen font"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_description",
+        "tooltip_text": "digicel welcome screen description"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_description_size",
+        "tooltip_text": "digicel welcome screen description size"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_description_color",
+        "tooltip_text": "digicel welcome screen description color"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_description_font",
+        "tooltip_text": "digicel welcome screen description font"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_login_button_text",
+        "tooltip_text": "digicel welcome screen login button text"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_create_account_button_text",
+        "tooltip_text": "digicel welcome screen create account button text"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_button_text_size",
+        "tooltip_text": "digicel welcome screen button text size"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_button_text_color",
+        "tooltip_text": "digicel welcome screen button text color"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_button_text_font",
+        "tooltip_text": "digicel welcome screen button text font"
+    },
+    {
+        "type": "text",
+        "key": "digicel_welcome_screen_create_account_link",
+        "tooltip_text": "digicel welcome screen create account link"
     }
   ],
   "targets": [

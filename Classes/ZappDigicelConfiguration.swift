@@ -108,7 +108,88 @@ public struct ZappDigicelLoginLocalization {
         case errorInvalideCustomerDataOrPasswordMissingMessage = "cleeng_login_error_credentials_message"
         case errorExpiredTokenMessage = "cleeng_login_error_expired_message"
         case errorUserAlreadyExistMessage = "cleeng_login_error_existing_user_credentials_message"
+        
+        case welcomeScreenDigicelTitle = "digicel_welcome_screen_title"
+        case welcomeScreenDigicelTitleSize = "digicel_welcome_screen_title_size"
+        case welcomeScreenDigicelTitleColor = "digicel_welcome_screen_title_color"
+        case welcomeScreenDigicelTitleFont = "digicel_welcome_screen_title_font"
+        case welcomeScreenDigicelDescription = "digicel_welcome_screen_description"
+        case welcomeScreenDigicelDescriptionSize = "digicel_welcome_screen_description_size"
+        case welcomeScreenDigicelDescriptionColor = "digicel_welcome_screen_description_color"
+        case welcomeScreenDigicelDescriptionFont = "digicel_welcome_screen_description_font"
+        case welcomeScreenDigicelLoginBtn = "digicel_welcome_screen_login_button_text"
+        case welcomeScreenDigicelRegisterBtn = "digicel_welcome_screen_create_account_button_text"
+        case welcomeScreenDigicelBtnSize = "digicel_welcome_screen_button_text_size"
+        case welcomeScreenDigicelBtnColor = "digicel_welcome_screen_button_text_color"
+        case welcomeScreenDigicelBtnFont = "digicel_welcome_screen_button_text_font"
     }
+    
+    public  func setLabelStyle(label: UILabel, colorForKey: ZappDigicelLoginLocalization.Key, fontSizeKey: ZappDigicelLoginLocalization.Key, fontNameKey: ZappDigicelLoginLocalization.Key){
+           if let colorKey = configuration[colorForKey.rawValue] as? String, !colorKey.isEmptyOrWhitespace(){
+               let color = UIColor(argbHexString: colorKey)
+               label.textColor = color
+           }
+           
+           if let fontSizeString = configuration[fontSizeKey.rawValue] as? String, let fontName = configuration[fontNameKey.rawValue] as? String
+           , let fontSize = CGFloat(fontSizeString), let font = UIFont(name: fontName, size: CGFloat(fontSize)){
+             label.font = font
+           }
+       }
+       
+       //set text to label from plugin configuration
+       public  func setLabelText(label: UILabel, textKey: ZappDigicelLoginLocalization.Key){
+           if let labelText = configuration[textKey.rawValue] as? String, !labelText.isEmptyOrWhitespace(){
+               label.text = labelText
+           }
+       }
+       
+       //set color, font and size to button from plugin configuration
+       public  func setButtonStyle(button: UIButton, colorForKey: ZappDigicelLoginLocalization.Key, fontSizeKey: ZappDigicelLoginLocalization.Key, fontNameKey: ZappDigicelLoginLocalization.Key){
+           if let colorKey = configuration[colorForKey.rawValue] as? String, !colorKey.isEmptyOrWhitespace(){
+               let color = UIColor(argbHexString: colorKey)
+               button.setTitleColor(color, for: .normal)
+           }
+           
+           if let fontSizeString = configuration[fontSizeKey.rawValue] as? String, let fontName = configuration[fontNameKey.rawValue] as? String
+               , let fontSize = CGFloat(fontSizeString) ,let font = UIFont(name: fontName, size: CGFloat(fontSize)){
+              button.titleLabel?.font = font
+           }
+       }
+       
+       //set text to label from plugin configuration
+       public  func setButtonText(button: UIButton, textKey: ZappDigicelLoginLocalization.Key){
+           if let labelText = configuration[textKey.rawValue] as? String, !labelText.isEmptyOrWhitespace(){
+               button.setTitle(labelText, for: .normal)
+           }
+       }
+       
+       //set color to view from plugin configuration
+       public  func setViewColor(view: UIView, colorKey:ZappDigicelLoginLocalization.Key){
+           if let colorString = configuration[colorKey.rawValue] as? String , let color = UIColor(argbHexString: colorString){
+               view.backgroundColor = color
+           }
+       }
+       
+       //set image to imageView from plugin configuration
+       public  func setImageView(imageView: UIImageView, bundle: Bundle,key: ZappDigicelLoginLocalization.Key){
+           if let image = UIImage(named: key.rawValue, in: bundle, compatibleWith: nil){
+               imageView.image = image
+           }
+       }
+       
+       //set image to button from plugin configuration
+       public  func setButtonImage(button: UIButton, bundle: Bundle,key: ZappDigicelLoginLocalization.Key){
+           if let image = UIImage(named: key.rawValue, in: bundle, compatibleWith: nil){
+              button.setImage(image, for: .normal)
+           }
+       }
+       
+       //set image BG to button from plugin configuration
+       public  func setButtonBGImage(button: UIButton, bundle: Bundle,key: ZappDigicelLoginLocalization.Key){
+           if let image = UIImage(named: key.rawValue, in: bundle, compatibleWith: nil){
+               button.setBackgroundImage(image, for: .normal)
+           }
+       }
     
     private let configuration: [String:Any]
     init(configuration: [String:Any]) {
