@@ -110,6 +110,8 @@ public struct ZappDigicelLoginLocalization {
         case errorUserAlreadyExistMessage = "cleeng_login_error_existing_user_credentials_message"
         
         case welcomeScreenDigicelTitle = "digicel_welcome_screen_title"
+        case welcomeScreenDigicelSecondTitle = "digicel_welcome_screen_second_title"
+        case welcomeScreenDigicelSecondTitleColor = "digicel_welcome_screen_second_title_color"
         case welcomeScreenDigicelTitleSize = "digicel_welcome_screen_title_size"
         case welcomeScreenDigicelTitleColor = "digicel_welcome_screen_title_color"
         case welcomeScreenDigicelTitleFont = "digicel_welcome_screen_title_font"

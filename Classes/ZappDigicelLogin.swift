@@ -34,7 +34,6 @@ import ZappPlugins
     private var offersNavagationController: CleengLoginAndSubscriptionController?
     fileprivate var loginCompletion:(((_ status: ZPLoginOperationStatus) -> Void))?
     private var didComeBackFromDigicelOffers = false
-    private var loginViewController:DigicelLoginViewController?
     
 
     public required override init() {
@@ -334,6 +333,10 @@ import ZappPlugins
         startOAuthFlow(redirectCode: code)
     }
     
+    public func handleRedirectUriRegisterCompleted() {
+           showWebLoginOrRegister(register: false)
+    }
+    
     //MARK: - Private
     
     func startOAuthFlow(redirectCode: String) {
@@ -394,22 +397,19 @@ import ZappPlugins
             let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
             loginWebViewController.delegate = self
             digicelWebViewController = loginWebViewController
-            navigationController = UINavigationController(rootViewController: loginWebViewController)
             if let navController = navigationController {
-               navController.setNavigationBarHidden(true, animated: false)
                 let clientId = configurationJSON["digicel_client_id"] as? String ?? "765"
                 let loginUrl = configurationJSON["digicel_login_url"] as? String ?? "http://digicelid.digicelgroup.com/networkAuthentication.do"
                 let digicelScope = configurationJSON["digicel_scope"] as? String ?? "GET_FULL_ACCOUNT%2BGET_PLANS&lang=en"
                 let registerUrl = configurationJSON["digicel_welcome_screen_create_account_link"] as? String ?? "https://digicelid.digicelgroup.com/register.do"
                 let urlRequest = register ? registerUrl : "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
                 if let webViewVC = DigicelTimedWebViewController(url: URL(string: urlRequest)) {
+                    webViewVC.view.backgroundColor = UIColor.white
                     webViewVC.redirectUriDelegate = self
                     loginWebViewController.webLoginVC = webViewVC
-                    APApplicasterController.sharedInstance().rootViewController.topmostModal().present(navController,
-                                                                                                       animated: true) {
-                                                                                                        
-                                                                                                        webViewVC.loadTargetURL()
-                    }
+                    webViewVC.spinner.color = UIColor.black
+                    navController.pushViewController(loginWebViewController, animated: true)
+                    webViewVC.loadTargetURL()
                 }
             }
         }
@@ -417,27 +417,25 @@ import ZappPlugins
     
     func showLoginScreen(){
         let bundle = Bundle.init(for: type(of: self))
-        loginViewController = DigicelLoginViewController(nibName: "DigicelLoginViewController", bundle: bundle)
-        if let loginController = loginViewController{
-            loginController.loginProtocol = self
-            loginController.configuration = self.configuration
-            APApplicasterController.sharedInstance()?.rootViewController.topmostModal()?.present(loginController, animated: true, completion: nil)
+        let  loginViewController = DigicelLoginViewController(nibName: "DigicelLoginViewController", bundle: bundle)
+        loginViewController.loginProtocol = self
+        loginViewController.configuration = self.configuration
+        navigationController = UINavigationController(rootViewController: loginViewController)
+        if let navController = navigationController {
+            navController.setNavigationBarHidden(true, animated: false)
+            APApplicasterController.sharedInstance().rootViewController.topmostModal()?.present(navController, animated: true, completion: nil)
         }
+        
     }
     
     func actionSelected(register: Bool) {
-        if let loginController = loginViewController{
-            loginController.dismiss(animated: true) {
-                self.showWebLoginOrRegister(register: register)
-            }
-        }
+        self.showWebLoginOrRegister(register: register)
     }
     
     func closeLoginScreen() {
-        if let loginController = loginViewController{
-            loginController.dismiss(animated: true) {
-
-            }
+        if let navController = navigationController{
+            navController.dismiss(animated: true, completion: nil)
+            loginCompletion?(.cancelled)
         }
     }
     
@@ -557,8 +555,8 @@ import ZappPlugins
     }
     
     func closeOnlyLoginScreen(completion: @escaping () -> ()){
-        if  let vc = self.navigationController?.viewControllers.first{
-            vc.dismiss(animated: true) {
+        if let navController = navigationController{
+            navController.dismiss(animated: true) {
                 completion()
             }
         }
@@ -614,12 +612,8 @@ import ZappPlugins
     //MARK: - DigicelBaseProtocol
 
     public func userDidSelectToClose() {
-        if let vc = navigationController?.presentingViewController {
-            let c = loginCompletion
-            loginCompletion = nil
-            vc.dismiss(animated: true, completion: {
-                c?(.cancelled)
-            })
+        if let navController = navigationController {
+            navController.popToRootViewController(animated: true)
         }
         else {
             loginCompletion?(.cancelled)

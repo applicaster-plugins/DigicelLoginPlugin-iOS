@@ -15,6 +15,7 @@
                 <outlet property="closeBtn" destination="9by-TK-mEd" id="7gr-2O-QPI"/>
                 <outlet property="createAccountBtn" destination="g2h-s6-D5s" id="1JD-Qz-cOG"/>
                 <outlet property="loginDescription" destination="oce-F3-OgS" id="tqb-sl-ke7"/>
+                <outlet property="loginSecondTitle" destination="QaO-8R-Wlj" id="fxb-TG-wcS"/>
                 <outlet property="loginTitle" destination="aRw-vw-MVj" id="Eic-S3-jcj"/>
                 <outlet property="logoImge" destination="xsO-0t-emu" id="qzn-Bu-oLv"/>
                 <outlet property="view" destination="iN0-l3-epB" id="y4P-gu-yMQ"/>
@@ -28,24 +29,35 @@
                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="6LR-65-1D4">
                     <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                 </imageView>
-                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Welcome to MyDigicel" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aRw-vw-MVj">
-                    <rect key="frame" x="122" y="134" width="170.5" height="21"/>
-                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                    <nil key="textColor"/>
-                    <nil key="highlightedColor"/>
-                </label>
+                <stackView opaque="NO" contentMode="scaleToFill" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="z6D-P5-IEN">
+                    <rect key="frame" x="99" y="134" width="216.5" height="20.5"/>
+                    <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Welcome to MyDigicel" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aRw-vw-MVj">
+                            <rect key="frame" x="0.0" y="0.0" width="170.5" height="20.5"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QaO-8R-Wlj">
+                            <rect key="frame" x="174.5" y="0.0" width="42" height="20.5"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                    </subviews>
+                </stackView>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Description" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oce-F3-OgS">
-                    <rect key="frame" x="163" y="313" width="88" height="21"/>
+                    <rect key="frame" x="163" y="313" width="88" height="20.5"/>
                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                     <nil key="textColor"/>
                     <nil key="highlightedColor"/>
                 </label>
-                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="logo.png" translatesAutoresizingMaskIntoConstraints="NO" id="xsO-0t-emu">
+                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="login_logo.png" translatesAutoresizingMaskIntoConstraints="NO" id="xsO-0t-emu">
                     <rect key="frame" x="168.5" y="175" width="77" height="115"/>
                 </imageView>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="g2h-s6-D5s">
-                    <rect key="frame" x="117" y="700" width="180" height="40"/>
-                    <state key="normal" title="create account" backgroundImage="buttonBG.png">
+                    <rect key="frame" x="155.5" y="710" width="103" height="30"/>
+                    <state key="normal" title="create account">
                         <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </state>
                     <connections>
@@ -53,8 +65,8 @@
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="V8J-ai-a93">
-                    <rect key="frame" x="117" y="645" width="180" height="40"/>
-                    <state key="normal" title="Log In" backgroundImage="buttonBG.png">
+                    <rect key="frame" x="186" y="665" width="42" height="30"/>
+                    <state key="normal" title="Log In">
                         <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </state>
                     <connections>
@@ -76,19 +88,19 @@
             <constraints>
                 <constraint firstAttribute="bottom" secondItem="6LR-65-1D4" secondAttribute="bottom" id="1dU-If-I0H"/>
                 <constraint firstItem="6LR-65-1D4" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" id="2T5-xD-wDE"/>
-                <constraint firstItem="xsO-0t-emu" firstAttribute="top" secondItem="aRw-vw-MVj" secondAttribute="bottom" constant="20" id="3K0-RT-vZ1"/>
-                <constraint firstItem="aRw-vw-MVj" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="50O-Z1-yRu"/>
                 <constraint firstItem="V8J-ai-a93" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="8MD-iB-vFF"/>
                 <constraint firstItem="9by-TK-mEd" firstAttribute="top" secondItem="vUN-kp-3ea" secondAttribute="top" constant="20" id="A88-pv-eDN"/>
-                <constraint firstItem="aRw-vw-MVj" firstAttribute="top" secondItem="vUN-kp-3ea" secondAttribute="top" constant="90" id="CWb-Z5-g5M"/>
+                <constraint firstItem="z6D-P5-IEN" firstAttribute="top" secondItem="vUN-kp-3ea" secondAttribute="top" constant="90" id="JZ2-8s-x8Q"/>
                 <constraint firstItem="oce-F3-OgS" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="Ojh-j2-N3m"/>
                 <constraint firstItem="g2h-s6-D5s" firstAttribute="top" secondItem="V8J-ai-a93" secondAttribute="bottom" constant="15" id="Q4E-HA-w7l"/>
                 <constraint firstItem="g2h-s6-D5s" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="Zyf-id-kYV"/>
                 <constraint firstItem="vUN-kp-3ea" firstAttribute="bottom" secondItem="g2h-s6-D5s" secondAttribute="bottom" constant="122" id="axN-GF-e40"/>
+                <constraint firstItem="z6D-P5-IEN" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="cjj-qG-4R8"/>
                 <constraint firstItem="xsO-0t-emu" firstAttribute="centerX" secondItem="vUN-kp-3ea" secondAttribute="centerX" id="dYO-eI-0be"/>
                 <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="6LR-65-1D4" secondAttribute="trailing" id="leh-TL-Nbp"/>
                 <constraint firstItem="oce-F3-OgS" firstAttribute="top" secondItem="xsO-0t-emu" secondAttribute="bottom" constant="23" id="owh-Fw-AXb"/>
                 <constraint firstItem="6LR-65-1D4" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" id="pIa-hi-qJt"/>
+                <constraint firstItem="xsO-0t-emu" firstAttribute="top" secondItem="z6D-P5-IEN" secondAttribute="bottom" constant="20.5" id="qZN-hk-6le"/>
                 <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="9by-TK-mEd" secondAttribute="trailing" constant="20" id="rxj-D7-AED"/>
             </constraints>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
@@ -97,7 +109,6 @@
         </view>
     </objects>
     <resources>
-        <image name="buttonBG.png" width="180" height="40"/>
-        <image name="logo.png" width="77" height="115"/>
+        <image name="login_logo.png" width="77" height="115"/>
     </resources>
 </document>
