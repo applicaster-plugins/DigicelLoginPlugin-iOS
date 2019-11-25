@@ -17,6 +17,7 @@ let kCallBackCodeURL = "https://digicelid.digicelgroup.com/otp/verify.do"
 public protocol DigicelRedirectUriProtocol {
     func handleRedirectUriWith(params: [String : Any]?)
     func handleRedirectUriUpdateMail()
+    func handleRedirectUriRegisterCompleted()
 }
 
 class DigicelTimedWebViewController: APTimedWebViewController {
@@ -33,13 +34,19 @@ class DigicelTimedWebViewController: APTimedWebViewController {
             }
         }
         
-        guard let urlString = request.url?.absoluteString,
+        if let urlString = request.url?.absoluteString,
             (urlString.range(of: kCallbackURL) != nil),
             let requestUrl = request.url,
             let queryDict = (requestUrl as NSURL).queryDictionary(),
-            let code = queryDict["code"] as? String else {
+            let code = queryDict["code"] as? String  {
+            self.redirectUriDelegate.handleRedirectUriWith(params: ["code" : code])
             return
         }
-        self.redirectUriDelegate.handleRedirectUriWith(params: ["code" : code])
+        
+        if let urlString = request.url?.absoluteString {
+            if((urlString.starts(with: kCallbackURL))){
+                self.redirectUriDelegate.handleRedirectUriRegisterCompleted()
+            }
+        }
     }
 }
