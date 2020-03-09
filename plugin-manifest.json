@@ -7,129 +7,33 @@
     "require_startup_execution": true
   },
   "dependency_repository_url": [
-    "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git",
-    "git@github.com:applicaster/login-plugin-cleeng-ios.git"
+    "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git"
   ],
   "platform": "ios",
-  "author_name": "Miri Vecselboim",
-  "author_email": "m.vecselboim@applicaster.com",
-  "manifest_version": "2.0.0",
+  "author_name": "S. Borkin",
+  "author_email": "s.borkin@applicaster.com",
+  "manifest_version": "2.1.0",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
-  "screen": false,
+  "screen": true,
+  "preload": true,
   "identifier": "DigicelLoginPlugin",
   "ui_builder_support": true,
   "dependency_name": "DigicelLoginPlugin",
-  "dependency_version": "3.0.0",
+  "dependency_version": "3.1.0",
   "whitelisted_account_ids": [
     "5af949534da8f300080050f9"
   ],
-  "min_zapp_sdk": "13.0.0-Dev",
+  "min_zapp_sdk": "13.0.0",
   "deprecated_since_zapp_sdk": "",
   "unsupported_since_zapp_sdk": "",
   "supported_nav_items": [],
   "react_native": false,
   "custom_configuration_fields": [
     {
-      "type": "text",
-      "key": "cleeng_login_publisher_id",
-      "tooltip_text": "The Cleeng publisher id"
-    },
-    {
-      "type": "checkbox",
-      "key": "cleeng_login_start_on_app_launch",
-      "tooltip_text": "Flag to indicate if to present the plugin on app launch"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_legal",
-      "tooltip_text": "Text for IAP-s view legal. For example: Payment will charged to iTunes account at confirmation of purchase"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_subscribe",
-      "tooltip_text": "Text for subscribe confirmation action button. For example: subscribe"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_internal_title",
-      "tooltip_text": "Text for internal alert title. For example: Error"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_internal_message",
-      "tooltip_text": "Text for internal alert message. For example: Something went wrong"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_credentials_title",
-      "tooltip_text": "Text for alert title presented when Cleeng api returns error code 11"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_credentials_message",
-      "tooltip_text": "Text for alert message presented when Cleeng api returns error code 11"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_expired_title",
-      "tooltip_text": "Text for alert title presented when Cleeng api returns error code 12"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_expired_message",
-      "tooltip_text": "Text for alert message presented when Cleeng api returns error code 12"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_existing_user_credentials_title",
-      "tooltip_text": "Text for alert title presented when Cleeng api returns error code 13"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_existing_user_credentials_message",
-      "tooltip_text": "Text for alert message presented when Cleeng api returns error code 13"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_invalid_credentials_title",
-      "tooltip_text": "Text for alert title presented when Cleeng api returns error code 15"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_invalid_credentials_message",
-      "tooltip_text": "Text for alert message presented when Cleeng api returns error code 15"
-    },
-    {
-      "type": "checkbox",
-      "key": "cleeng_login_redeem_coupon_available",
-      "tooltip_text": "cleeng_login_redeem_coupon_available"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_redeem_title",
-      "tooltip_text": "cleeng_redeem_title"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_redeem_description",
-      "tooltip_text": "cleeng_redeem_description"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_redeem_action",
-      "tooltip_text": "cleeng_redeem_button_text"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_coupon_title",
-      "tooltip_text": "cleeng_login_error_coupon_title"
-    },
-    {
-      "type": "text",
-      "key": "cleeng_login_error_coupon_message",
-      "tooltip_text": "cleeng_login_error_coupon_message"
+      "type": "uploader",
+      "key": "ios_assets_bundle"
     },
     {
       "type": "text",
@@ -150,36 +54,6 @@
       "type": "text",
       "key": "digicel_login_url",
       "tooltip_text": "Digital login url."
-    },
-		{
-			"type": "text",
-			"key": "already_login_error_message",
-			"tooltip_text": "already login error message"
-		},
-    {
-      "type": "text",
-      "key": "logout_successfully_message",
-      "tooltip_text": "logout successfully message"
-    },
-		{
-			"type": "text",
-			"key": "already_logout_error_message",
-			"tooltip_text": "already logout error message"
-		},
-    {
-      "type": "text",
-      "key": "digicel_subscription_title",
-      "tooltip_text": "Digital subscription item title."
-    },
-    {
-      "type": "text",
-      "key": "digicel_subscription_text",
-      "tooltip_text": "Digital subscription item description"
-    },
-    {
-      "type": "text",
-      "key": "digicel_subscription_submit_btn",
-      "tooltip_text": "Digital subscription item submit button."
     },
     {
       "type": "text",
@@ -212,99 +86,104 @@
       "tooltip_text": "digicel subscription item url"
     },
     {
-      "type": "text",
-      "key": "cleeng_publisher_token",
-      "tooltip_text": "cleeng publisher token"
-    },
-    {
       "type": "checkbox",
       "key": "logged_in_free_access",
       "tooltip_text": "Flag to indicate if login only gets free access"
     },
     {
-      "type": "checkbox",
-      "key": "enable_subscription_screen",
-      "tooltip_text": "Flag to indicate if display the subscription screen"
+      "type": "text",
+      "key": "already_login_error_message",
+      "tooltip_text": "already login error message"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_title",
-        "tooltip_text": "digicel welcome screen title"
+      "type": "text",
+      "key": "logout_successfully_message",
+      "tooltip_text": "logout successfully message"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_title_size",
-        "tooltip_text": "digicel welcome screen size"
+      "type": "text",
+      "key": "already_logout_error_message",
+      "tooltip_text": "already logout error message"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_title_color",
-        "tooltip_text": "digicel welcome screen color"
+      "type": "text",
+      "key": "digicel_welcome_screen_title",
+      "tooltip_text": "digicel welcome screen title"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_title_font",
-        "tooltip_text": "digicel welcome screen font"
+      "type": "text",
+      "key": "digicel_welcome_screen_title_size",
+      "tooltip_text": "digicel welcome screen size"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_second_title",
-        "tooltip_text": "digicel welcome screen title"
+      "type": "text",
+      "key": "digicel_welcome_screen_title_color",
+      "tooltip_text": "digicel welcome screen color"
     },
     {
-         "type": "text",
-         "key": "digicel_welcome_screen_second_title_color",
-         "tooltip_text": "digicel welcome screen second title color"
+      "type": "text",
+      "key": "digicel_welcome_screen_title_font",
+      "tooltip_text": "digicel welcome screen font"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_description",
-        "tooltip_text": "digicel welcome screen description"
+      "type": "text",
+      "key": "digicel_welcome_screen_second_title",
+      "tooltip_text": "digicel welcome screen title"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_description_size",
-        "tooltip_text": "digicel welcome screen description size"
+      "type": "text",
+      "key": "digicel_welcome_screen_second_title_color",
+      "tooltip_text": "digicel welcome screen second title color"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_description_color",
-        "tooltip_text": "digicel welcome screen description color"
+      "type": "text",
+      "key": "digicel_welcome_screen_description",
+      "tooltip_text": "digicel welcome screen description"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_description_font",
-        "tooltip_text": "digicel welcome screen description font"
+      "type": "text",
+      "key": "digicel_welcome_screen_description_size",
+      "tooltip_text": "digicel welcome screen description size"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_login_button_text",
-        "tooltip_text": "digicel welcome screen login button text"
+      "type": "text",
+      "key": "digicel_welcome_screen_description_color",
+      "tooltip_text": "digicel welcome screen description color"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_create_account_button_text",
-        "tooltip_text": "digicel welcome screen create account button text"
+      "type": "text",
+      "key": "digicel_welcome_screen_description_font",
+      "tooltip_text": "digicel welcome screen description font"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_button_text_size",
-        "tooltip_text": "digicel welcome screen button text size"
+      "type": "text",
+      "key": "digicel_welcome_screen_login_button_text",
+      "tooltip_text": "digicel welcome screen login button text"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_button_text_color",
-        "tooltip_text": "digicel welcome screen button text color"
+      "type": "text",
+      "key": "digicel_welcome_screen_create_account_button_text",
+      "tooltip_text": "digicel welcome screen create account button text"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_button_text_font",
-        "tooltip_text": "digicel welcome screen button text font"
+      "type": "text",
+      "key": "digicel_welcome_screen_button_text_size",
+      "tooltip_text": "digicel welcome screen button text size"
     },
     {
-        "type": "text",
-        "key": "digicel_welcome_screen_create_account_link",
-        "tooltip_text": "digicel welcome screen create account link"
+      "type": "text",
+      "key": "digicel_welcome_screen_button_text_color",
+      "tooltip_text": "digicel welcome screen button text color"
+    },
+    {
+      "type": "text",
+      "key": "digicel_welcome_screen_button_text_font",
+      "tooltip_text": "digicel welcome screen button text font"
+    },
+    {
+      "type": "text",
+      "key": "digicel_welcome_screen_create_account_link",
+      "tooltip_text": "digicel welcome screen create account link"
     }
   ],
   "targets": [

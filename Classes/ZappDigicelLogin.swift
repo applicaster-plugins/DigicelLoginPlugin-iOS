@@ -7,425 +7,243 @@
 //
 
 import Foundation
-import ZappPlugins
-import ZappLoginPluginsSDK
+
 import ApplicasterSDK
-import SwiftyStoreKit
-import CleengLogin
 import ZappPlugins
+import CleengLoginDigicel
 
-
-@objc public class ZappDigicelLogin : NSObject, ZPLoginProviderUserDataProtocol, ZPAppLoadingHookProtocol,APTimedWebViewControllerDelegate, DigicelRedirectUriProtocol, DigicelBaseProtocol, LoginProtocol {
-   
+@objc public class ZappDigicelLogin : NSObject, ZPLoginProviderUserDataProtocol, ZPPluggableScreenProtocol, ZPScreenHookAdapterProtocol  {
+    public var screenPluginDelegate: ZPPlugableScreenDelegate?
     
-   
-    /// Cleeng publisher identifier. **Required**
-    private var cleengPublisherId: String!
     public var configurationJSON: NSDictionary?
-    // The configuration model
-    internal var configuration: ZappDigicelConfiguration?
-    //cleeng login object
-    private var cleengLogin: ZappCleengLogin!
-    private var digicelApi: DigicelLoginApi?
-    //web view for for the login screen
-    private var digicelWebViewController: DigicelLoginWebViewController!
-    private var navigationController: UINavigationController? = nil
-    //cleeng offers view controller
-    private var offersNavagationController: CleengLoginAndSubscriptionController?
-    fileprivate var loginCompletion:(((_ status: ZPLoginOperationStatus) -> Void))?
-    private var didComeBackFromDigicelOffers = false
     
-
-    public required override init() {
-        super.init()
+    internal var configuration: ZappDigicelConfiguration?
+    
+    private var cleengLogin: CleengLoginPlugin?
+    private let digicelApi: DigicelLoginApi?
+    
+    private var navigationController: UINavigationController? = nil
+    private var digicelWebViewController: DigicelLoginWebViewController!
+    
+    fileprivate var loginCompletion: ((Bool, NSError?, [String : Any]?) -> Void)?
+    
+    public required override convenience init() {
+        self.init(configurationJSON: nil)
     }
     
     public required init(configurationJSON: NSDictionary?) {
-        let publisherId: String! = configurationJSON?["cleeng_login_publisher_id"] as? String
-        assert(publisherId != nil, "'cleeng_login_publisher_id' is mandatory")
-        super.init()
+        guard let configurationJSON = configurationJSON else {
+            self.digicelApi = nil
+            super.init()
+            return
+        }
+        
         self.configurationJSON = configurationJSON
-        cleengLogin = ZappCleengLogin.init(configurationJSON: configurationJSON)
-        self.cleengPublisherId = publisherId
         self.configuration = ZappDigicelConfiguration(configuration: (configurationJSON as? [String:Any]) ?? [:])
-        digicelApi = DigicelLoginApi(configurationJSON: configurationJSON)
-        let notificationCenter = NotificationCenter.default
-        notificationCenter.addObserver(self, selector: #selector(appMovedToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(finishSubcriptionPurchase), name: Notification.Name("didBuySubscription"), object: nil)
+        
+        self.digicelApi = DigicelLoginApi(configurationJSON: configurationJSON)
+        
+        super.init()
     }
     
-    @objc func appMovedToForeground() {
-        if(didComeBackFromDigicelOffers){
-            checkForDigicelSubscruptions()
-            APApplicasterController.sharedInstance().rootViewController.topmostModal()?.children.first?.dismiss(animated: false, completion: nil)
-            didComeBackFromDigicelOffers = false
+    required public convenience init?(screenName: String?, dataSourceModel: NSObject?) {
+        self.init(configurationJSON: nil)
+    }
+    
+    public required convenience init?(pluginModel: ZPPluginModel, dataSourceModel: NSObject?) {
+        self.init(configurationJSON: nil)
+    }
+    
+    public required convenience init?(pluginModel: ZPPluginModel, screenModel: ZLScreenModel, dataSourceModel: NSObject?) {
+        let generalSection = screenModel.object["general"] as? NSDictionary
+        
+        self.init(configurationJSON: generalSection)
+    }
+    
+    public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
+        completion(false)
+    }
+    
+    public func handleUrlScheme(_ params: NSDictionary) {
+    }
+    
+    public func login(_ additionalParameters: [String : Any]?, completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
+        completion(.completedSuccessfully)
+    }
+    
+    public func logout(_ completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
+        DigicelCredentialsManager.saveDigicelUser(nil)
+        
+        guard let cleengLogin = self.cleengLogin else {
+            completion(.completedSuccessfully)
+            return
         }
-    }
-    
-    @objc func finishSubcriptionPurchase(){
-        closeSubscriptionsScreen {
-            self.loginCompletion?(.completedSuccessfully)
-        }
-    }
-    
-    func checkForDigicelSubscruptions(){
-        digicelApi?.getUserSubscriptions(completion: { (succeeded, plans, error) in
-            if(plans?.count != 0){
-                self.digicelApi?.currentDigicelUser?.userType = .Premium
-                DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
-                if let plan = plans?.first as? DigicelPlan , let email = self.digicelApi?.currentDigicelUser?.email{
-                    self.digicelApi?.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
-                        if let date = plan.dateEnd{
-                            self.digicelApi?.generateTokenForDigicelPlan(dateEnd: date, completion: { (success) in
-                                if success{
-                                    self.loginCompletion?(.completedSuccessfully)
-                                }
-                            })
-                        }
-                    })
-                }
-            }else{
-                self.digicelApi?.currentDigicelUser?.userType = .Basic
-                DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
-            }
+        
+        cleengLogin.logout(completion: { (result) in
+            completion(.completedSuccessfully)
         })
     }
     
-    //MARK: - ZPLoginProviderUserDataProtocol
-    
-    /// A map of closures to call on verify completion
-    private var verifyCalls: [String:((Bool) -> ())] = [:]
-    
-    /**
-     `ZPLoginProviderUserDataProtocol` api. Call this to check if user has access to one or more items.
-     */
-    
-    public func isUserComply(policies: [String : NSObject], completion: @escaping (Bool) -> ()) {
-        cleengLogin.isUserComply(policies: policies) { (isComply) in
-            if let freeValue = policies["free"] as? Bool {
-                if freeValue { return completion(true)}
-            }
-
-            if let freeValue = policies["free"] as? String {
-                return (freeValue == "true") ? completion(true) : completion(false)
-            }
-            
-             if(self.validForFreePass()){
-                completion(true)
-             }else{
-                if(self.getUserToken() == ""){
-                    completion(false)
-                }else{
-                    completion(isComply)
-                }
-            }
-        }
-    }
-    
-    
-    public func handleUrlScheme(_ params: NSDictionary) {
-        guard let action = params["action"] as? String else{
-            return
-        }
-        if let closeScreen = params["closeScreen"] as? String{
-            if (closeScreen == "true"){
-            ZAAppConnector.sharedInstance().navigationDelegate.navigateToHomeScreen()
-                if let vc =  APApplicasterController.sharedInstance().rootViewController.topmostModal()?.children[1]{
-                    vc.removeFromParent()
-                    vc.view.removeFromSuperview()
-                }
-            }
-        }
-        switch action {
-        case "login":
-            if(getUserToken() != ""){
-                displayErrorAlert(message: .alreadyLogin)
-            }else{
-                login(nil) { (bool) in
-                    
-                }
-            }
-        case "logout":
-            if(getUserToken() != ""){
-                displayErrorAlert(message: .logutSuccessfully)
-                logout { (bool) in
-                    if let logInUrl = self.configurationJSON?["digicel_login_url"] as? String {
-                        self.deleteCookies(forURL: URL(string: logInUrl)!)
-                    }
-                }
-            }else{
-              displayErrorAlert(message: .alreadyLogout)
-                }
-        default:
-            return
-        }
-    }
-    
-    private func validForFreePass() -> Bool{
-        if((isFreeAccess() && digicelApi?.currentDigicelUser?.userType == .Basic) || digicelApi?.currentDigicelUser?.userType == .Premium){
-            return true
-        }
-        return false
-    }
-    
-    /**
-     `ZPLoginProviderUserDataProtocol` api. Call this to present UI to let user make login (if needed) and IAP purchase (if needed).
-     */
-    public func login(_ additionalParameters: [String : Any]?, completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
-        loginCompletion = completion
-        if (DigicelCredentialsManager.getDigicelUserType() != .Free){
-            didComeBackFromDigicelOffers = true
-            showSubscription()
-        }else{
-            showLoginScreen()
-        }
-    }
-    
-    /**
-     `ZPLoginProviderUserDataProtocol` api. Call this to logout from Cleeng.
-     */
-    public func logout(_ completion: @escaping ((ZPLoginOperationStatus) -> Void)) {
-        APAuthorizationManager.sharedInstance()?.updateAuthorizationTokens(withAuthorizationProviders: nil)
-        DigicelCredentialsManager.saveDigicelUserType(type: .Free)
-        cleengLogin.logout { (logout) in
-            completion(logout)
-        }
-    }
-    
-    func deleteCookies(forURL url: URL) {
-        let cookieStorage = HTTPCookieStorage.shared
-        
-        for cookie in readCookie(forURL: url) {
-            cookieStorage.deleteCookie(cookie)
-        }
-    }
-    
-    func readCookie(forURL url: URL) -> [HTTPCookie] {
-        let cookieStorage = HTTPCookieStorage.shared
-        let cookies = cookieStorage.cookies(for: url) ?? []
-        return cookies
-    }
-    
     public func isAuthenticated() -> Bool {
-        return false
-    }
-    
-    func checkValidCleengSubscription() -> Bool{
-        let kCleengLoginDefaultTokenKey = "CleengLoginDefaultToken"
-        let tokens = APAuthorizationManager.sharedInstance()?.authorizationTokens()
-        let authIds = (tokens?.allKeys ?? []).filter({ $0 is String && ($0 as! String) != kCleengLoginDefaultTokenKey }) as! [String]
-        for authId in authIds {
-            if let tokenToValid = tokens?[authId] as? String, !(tokenToValid.isEmpty) {
-                return true
-            }
+        guard let digicelUser = DigicelCredentialsManager.loadDigicelUser() else {
+            return false
         }
-        return false
+        
+        return digicelUser.digicelToken != nil && digicelUser.userType != .Free
     }
     
-    func showSubscription(){
-        offersNavagationController = CleengLoginAndSubscriptionController(startWith: .subscriptionsList, api: getCleengApi()!, configuration: cleengLogin.configuration)
-        offersNavagationController?.digicelUserSubscription = true
-        APApplicasterController.sharedInstance().rootViewController.topmostModal().present(offersNavagationController!, animated: true)
-    }
-    
-    // internal error for login flaw
-    func displayErrorAlert(message: ZappDigicelLoginLocalization.Key = .errorInternalMessage){
-       // let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
-        let message = self.configuration?.localization.localizedString(for: message)
-        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: self.configuration?.localization.localizedString(for: .alertCancelAction, defaultString: NSLocalizedString("OK", comment: "Cancel")), style: .cancel, handler: { [weak self] _ in
-             guard let strongSelf = self else { return }
-            if let vc = strongSelf.navigationController?.presentingViewController {
-                vc.dismiss(animated: true, completion: {
-                })
-            }
-        }))
-        if let vc = self.navigationController?.viewControllers.first{
-            vc.present(alert, animated: true, completion: nil)
-        }else{
-            APApplicasterController.sharedInstance().rootViewController.topmostModal().present(alert, animated: true)
-        }
-    }
-    
-    /**
-     `ZPLoginProviderUserDataProtocol` api. Check if there currently UI presented to make login or IAP purchase for an item
-     */
     public func isPerformingAuthorizationFlow() -> Bool {
-        return cleengLogin.isPerformingAuthorizationFlow()
+        return false
     }
     
     public func getUserToken() -> String {
-        return cleengLogin.getUserToken()
+        return ""
     }
     
-    //MARK: - ZPAppLoadingHookProtocol
-    public func executeAfterAppRootPresentation(displayViewController: UIViewController?, completion: (() -> Swift.Void)?) {
-        guard let startOnAppLaunch = configurationJSON?["cleeng_login_start_on_app_launch"] else {
-            completion?()
+    public func createScreen() -> UIViewController {
+        return UIViewController()
+    }
+    
+    public func executeHook(presentationIndex: NSInteger, dataDict: [String : Any]?, taskFinishedWithCompletion: @escaping (Bool, NSError?, [String : Any]?) -> Void) {
+        taskFinishedWithCompletion(false, nil, nil)
+    }
+    
+    public func executeHook(presentationIndex: NSInteger, model: NSObject?, taskFinishedWithCompletion: @escaping (Bool, NSError?, [String : Any]?) -> Void) {
+        func completeHook(status: Bool) {
+            self.screenPluginDelegate?.removeScreenPluginFromNavigationStack()
+            taskFinishedWithCompletion(status, nil, nil)
+        }
+        
+        guard let digicelApi = self.digicelApi else {
+            completeHook(status: false)
             return
         }
         
-        //check if free access and have free access token.  if not , generate.
-        if let freeAccessAuthId = configurationJSON?["digicel_free_access_auth_id"] as? String{
-            if (APAuthorizationManager.sharedInstance()?.authorizationTokens()[freeAccessAuthId] as? String == nil && (digicelApi?.currentDigicelUser?.userType != .Free) && self.isFreeAccess()){
-                digicelApi?.freeAccessToken { (success) in
-                    
-                }
+        guard let playables = model as? Array<Any>, let playable = playables[0] as? ZPAtomEntryPlayableProtocol else {
+            completeHook(status: false)
+            return
+        }
+        
+        let extensions = playable.extensionsDictionary as? [String: NSObject] ?? [String: NSObject]()
+        
+        if let freeValue = extensions["free"] as? Bool, freeValue {
+            completeHook(status: true)
+            return
+        }
+        
+        if let freeValue = extensions["free"] as? String, freeValue == "true" {
+            completeHook(status: true)
+            return
+        }
+        
+        if let currentDigicelUser = digicelApi.currentDigicelUser {
+            let userType = currentDigicelUser.userType
+            if userType == .Basic || userType == .Premium {
+                completeHook(status: true)
+                return
             }
         }
         
-       // check if digicel expierd // if they cancel ew need to check again
-        if(getUserToken() != "" && digicelApi?.currentDigicelUser?.subscriberType == .InNetwotk){
-                        digicelApi?.getUserSubscriptions { (success, response, error) in
-                            if(response?.count != 0){
-                                guard let email = self.digicelApi?.currentDigicelUser?.email, let plan = response?.first as? DigicelPlan, let dateEnd = plan.dateEnd else{
-                                    return
-                                }
-                                self.digicelApi?.currentDigicelUser?.userType = .Premium
-                                DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
-                                self.digicelApi?.generateTokenForDigicelPlan(dateEnd: dateEnd, completion: { (success) in
-                                    
-                                })
-                                self.digicelApi?.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
-                                    
-                                })
-                            }else{
-                                self.digicelApi?.currentDigicelUser?.userType = .Basic
-                                DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
-                            }
-                        }
-        }
-        
-        var presentLogin = false
-        if let flag = startOnAppLaunch as? Bool {
-            presentLogin = flag
-        } else if let num = startOnAppLaunch as? Int {
-            presentLogin = (num == 1)
-        } else if let str = startOnAppLaunch as? String {
-            presentLogin = (str == "1")
-        }
-        
-        if presentLogin {
-            let item = EmptyAPPurchasableItem()
-            self.login(["playable_items" : [item]], completion: { [weak self] _ in
-                
-                guard let strongSelf = self else {
-                    return
-                }
-                if let vc = strongSelf.navigationController?.presentingViewController {
-                    vc.dismiss(animated: true, completion: completion)
-                } else {
-                    completion?()
-                }
-            })
-        } else {
-            completion?()
-        }
-    }
-    
-    //MARK: -
-
-    public func handleRedirectUriWith(params: [String : Any]?) {
-        guard let params = params,
-            let code = params["code"] as? String else {
-                return
-        }
-        startOAuthFlow(redirectCode: code)
-    }
-    
-    public func handleRedirectUriRegisterCompleted() {
-           showWebLoginOrRegister(register: false)
-    }
-    
-    //MARK: - Private
-    
-    func startOAuthFlow(redirectCode: String) {
-        guard let digicelApi =  self.digicelApi else{
+        guard let authId = self.configuration?.premiumAuthId else {
+            completeHook(status: false)
             return
         }
-        digicelApi.continueOAuthFlow(authCode: redirectCode) { (succeeded, response, error) in
-            if succeeded == true {
-                if let response = response as? [String : Any],
-                    let email = response["email"] as? String,
-                    email.isEmpty == false {
-                    // The user has an email address, continue
-                    self.continueSubscriptionFlow(completion: { (succeeded, error) in
-                        if succeeded == true {
-                            if let completion = self.loginCompletion {
-                                completion(.completedSuccessfully)
-                            }
-                           
-                        }
-                        else {
-                            if let completion = self.loginCompletion {
-                                completion(.failed)
-                            }
-                        }
-                    })
+        
+        let overridePolicies = extensions.merge([
+            "ds_product_ids": [authId] as NSObject,
+            "requires_authentication": NSNumber(booleanLiteral: false)
+        ]) as [String: NSObject]
+        
+        playable.extensionsDictionary = overridePolicies as NSDictionary
+        
+        self.cleengLogin = self.createCleengLoginPlugin(model)
+        
+        guard let cleengLogin = self.cleengLogin else {
+            completeHook(status: false)
+            return
+        }
+        
+        cleengLogin.isUserComply(policies: overridePolicies) { (status) in
+            if status {
+                completeHook(status: true)
+                return
+            }
+            
+            func handleLoginCompletion() {
+                if let digicelUser = digicelApi.currentDigicelUser, digicelUser.userType == .Premium {
+                    completeHook(status: true)
+                    return
                 }
-                else {
-                    //present webview with Digicel email verification
-                    self.presentEmailVerificationWebView()
+                
+                // verify purchase with cleeng
+                cleengLogin.login(overridePolicies) { (cleengStatus) in
+                    completeHook(status: cleengStatus == .completedSuccessfully)
+                }
+            }
+            
+            func performLogin() {
+                self.loginCompletion = { (status: Bool, error: NSError?, data: [String: Any]?) in
+                    self.closeInnerScreen {
+                        guard status else {
+                            completeHook(status: false)
+                            return
+                        }
+                        
+                        handleLoginCompletion()
+                    }
+                }
+                
+                self.showLoginScreen()
+            }
+            
+            if self.isAuthenticated() && cleengLogin.isAuthenticated() {
+                handleLoginCompletion()
+            }
+            else if self.isAuthenticated() && !cleengLogin.isAuthenticated() {
+                self.logout() { status in
+                    performLogin()
                 }
             }
             else {
-                self.displayErrorAlert()
-            }
-            
-        }
-    }
-    
-    // Flag to indicate if login only gets free access
-    func isFreeAccess() -> Bool {
-        guard let loggedInFreeAccess = configurationJSON?["logged_in_free_access"] else {
-            return false
-        }
-        var retVal = false
-        if let flag = loggedInFreeAccess as? Bool {
-            retVal = flag
-        } else if let num = loggedInFreeAccess as? Int {
-            retVal = (num == 1)
-        } else if let str = loggedInFreeAccess as? String {
-            retVal = (str == "1")
-        }
-        return retVal
-    }
-    
-    func showWebLoginOrRegister (register :Bool) {
-        if let configurationJSON = configurationJSON {
-            let bundle = Bundle.init(for: type(of: self))
-            let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
-            loginWebViewController.delegate = self
-            digicelWebViewController = loginWebViewController
-            if let navController = navigationController {
-                let clientId = configurationJSON["digicel_client_id"] as? String ?? "765"
-                let loginUrl = configurationJSON["digicel_login_url"] as? String ?? "http://digicelid.digicelgroup.com/networkAuthentication.do"
-                let digicelScope = configurationJSON["digicel_scope"] as? String ?? "GET_FULL_ACCOUNT%2BGET_PLANS&lang=en"
-                let registerUrl = configurationJSON["digicel_welcome_screen_create_account_link"] as? String ?? "https://digicelid.digicelgroup.com/register.do"
-                let urlRequest = register ? registerUrl : "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
-                if let webViewVC = DigicelTimedWebViewController(url: URL(string: urlRequest)) {
-                    webViewVC.view.backgroundColor = UIColor.white
-                    webViewVC.redirectUriDelegate = self
-                    loginWebViewController.webLoginVC = webViewVC
-                    webViewVC.spinner.color = UIColor.black
-                    navController.pushViewController(loginWebViewController, animated: true)
-                    webViewVC.loadTargetURL()
-                }
+                performLogin()
             }
         }
     }
     
-    func showLoginScreen(){
-        let bundle = Bundle.init(for: type(of: self))
-        let  loginViewController = DigicelLoginViewController(nibName: "DigicelLoginViewController", bundle: bundle)
-        loginViewController.loginProtocol = self
-        loginViewController.configuration = self.configuration
-        navigationController = UINavigationController(rootViewController: loginViewController)
-        if let navController = navigationController {
-            navController.setNavigationBarHidden(true, animated: false)
-            APApplicasterController.sharedInstance().rootViewController.topmostModal()?.present(navController, animated: true, completion: nil)
+    public var isFlowBlocker: Bool {
+        return true
+    }
+}
+
+extension ZappDigicelLogin: ZPAppLoadingHookProtocol {
+    public func executeAfterAppRootPresentation(displayViewController: UIViewController?, completion: (() -> Swift.Void)?) {
+        completion?()
+    }
+}
+
+extension ZappDigicelLogin: DigicelRedirectUriProtocol, DigicelBaseProtocol, LoginProtocol {
+    public func handleRedirectUriWith(params: [String : Any]?) {
+        guard let params = params, let code = params["code"] as? String else {
+            return
         }
         
+        self.handleOAuthFlow(redirectCode: code)
+    }
+    
+    public func handleRedirectUriRegisterCompleted() {
+        self.showWebLoginOrRegister(register: false)
+    }
+    
+    public func handleRedirectUriUpdateMail() {
+    }
+    
+    public func userDidSelectToClose() {
+        if let navController = self.navigationController {
+            navController.popToRootViewController(animated: true)
+        }
+        else {
+            self.loginCompletion?(false, nil, nil)
+        }
     }
     
     func actionSelected(register: Bool) {
@@ -433,211 +251,231 @@ import ZappPlugins
     }
     
     func closeLoginScreen() {
-        if let navController = navigationController{
-            navController.dismiss(animated: true, completion: nil)
-            loginCompletion?(.cancelled)
+        self.loginCompletion?(false, nil, nil)
+    }
+}
+
+extension ZappDigicelLogin {
+    private func createCleengLoginPlugin(_ model: NSObject?) -> CleengLoginPlugin? {
+        guard
+            let pluginModel = ZPPluginManager.pluginModelById("CleengDigicel"),
+            let classType = ZPPluginManager.adapterClass(pluginModel) as? CleengLoginPlugin.Type,
+            let screenModel = ZAAppConnector.sharedInstance().genericDelegate.screenModelForPluginID(pluginID: "CleengDigicel", dataSource: model) else {
+                return nil
+        }
+        
+        return classType.init(pluginModel: pluginModel, screenModel: screenModel, dataSourceModel: model)
+    }
+    
+    private func handleOAuthFlow(redirectCode: String) {
+        guard let digicelApi = self.digicelApi else {
+            return
+        }
+        
+        digicelApi.handleOAuthFlow(authCode: redirectCode) { (digicelUser, error) in
+            guard let digicelUser = digicelUser else {
+                self.displayErrorAlert()
+                return
+            }
+            
+            if let email = digicelUser.email, !email.isEmpty {
+              self.syncWithCleeng() { (succeeded, error) in
+                  self.loginCompletion?(succeeded, nil, nil)
+              }
+            }
+            else {
+                self.presentEmailVerificationWebView()
+            }
         }
     }
     
-    func presentWebViewWith(url: String?) {
+    private func displayErrorAlert(message: ZappDigicelLoginLocalization.Key = .errorInternalMessage) {
+        // let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
+        let message = self.configuration?.localization.localizedString(for: message)
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: self.configuration?.localization.localizedString(for: .alertCancelAction, defaultString: NSLocalizedString("OK", comment: "Cancel")), style: .cancel, handler: { [weak self] _ in
+            guard let strongSelf = self else { return }
+            if let vc = strongSelf.navigationController?.presentingViewController {
+                vc.dismiss(animated: true, completion: {
+                })
+            }
+        }))
+        
+        if let vc = self.navigationController?.viewControllers.first {
+            vc.present(alert, animated: true, completion: nil)
+        }
+        else {
+            ZAAppConnector.sharedInstance().navigationDelegate?.topmostModal()?.present(alert, animated: true)
+        }
+    }
+    
+    private func showWebLoginOrRegister(register :Bool) {
+        guard
+            let navigationController = self.navigationController,
+            let configurationJSON = self.configurationJSON,
+            let clientId = configurationJSON["digicel_client_id"] as? String,
+            let loginUrl = configurationJSON["digicel_login_url"] as? String,
+            let digicelScope = configurationJSON["digicel_scope"] as? String else {
+                return
+        }
+        
+        let url: String
+        
+        if register {
+            guard let registerUrl = configurationJSON["digicel_welcome_screen_create_account_link"] as? String else {
+                return
+            }
+            
+            url = registerUrl
+        }
+        else {
+            url = "\(loginUrl)?response_type=code&client_id=\(clientId)&redirect_uri=https://applicaster.sportsmax/auth/&scope=\(digicelScope)"
+        }
+        
+        let bundle = Bundle.init(for: type(of: self))
+        let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
+        loginWebViewController.delegate = self
+        
+        self.digicelWebViewController = loginWebViewController
+        
+        if let webViewVC = DigicelTimedWebViewController(url: URL(string: url)) {
+            webViewVC.view.backgroundColor = UIColor.white
+            webViewVC.redirectUriDelegate = self
+            loginWebViewController.webLoginVC = webViewVC
+            webViewVC.spinner.color = UIColor.black
+            navigationController.pushViewController(loginWebViewController, animated: true)
+            webViewVC.loadTargetURL()
+        }
+    }
+    
+    private func showLoginScreen() {
+        let bundle = Bundle.init(for: type(of: self))
+        
+        let loginViewController = DigicelLoginViewController(nibName: "DigicelLoginViewController", bundle: bundle)
+        loginViewController.loginProtocol = self
+        loginViewController.configuration = self.configuration
+        
+        self.navigationController = UINavigationController(rootViewController: loginViewController)
+        if let navController = self.navigationController {
+            navController.setNavigationBarHidden(true, animated: false)
+            ZAAppConnector.sharedInstance().navigationDelegate?.topmostModal()?.present(navController, animated: true, completion: nil)
+        }
+    }
+    
+    private func presentWebViewWith(url: String?) {
         guard let urlStr = url else {
             return
         }
+        
         if let webViewVC = DigicelTimedWebViewController(url: URL(string: urlStr)) {
             webViewVC.redirectUriDelegate = self
             
-            if let digicelWebViewController = digicelWebViewController {
+            if let digicelWebViewController = self.digicelWebViewController {
                 digicelWebViewController.webLoginVC = webViewVC
                 digicelWebViewController.addChildViewController(digicelWebViewController.webLoginVC, to: digicelWebViewController.webContainerView)
                 webViewVC.loadTargetURL()
-            }else{
+            }
+            else {
                 let bundle = Bundle.init(for: type(of: self))
+                
                 let loginWebViewController = DigicelLoginWebViewController(nibName: "DigicelLoginWebViewController", bundle: bundle)
                 loginWebViewController.delegate = self
-                digicelWebViewController = loginWebViewController
-                navigationController = UINavigationController(rootViewController: loginWebViewController)
+                self.digicelWebViewController = loginWebViewController
+                
+                self.navigationController = UINavigationController(rootViewController: loginWebViewController)
                 if let navController = navigationController {
                     navController.setNavigationBarHidden(true, animated: false)
                 }
+                
                 loginWebViewController.webLoginVC = webViewVC
-                APApplicasterController.sharedInstance().rootViewController.topmostModal().present(navigationController!,
-                                                                                                   animated: true) {
-                                                                                                    
-                                                                                                    webViewVC.loadTargetURL()
+                ZAAppConnector.sharedInstance().navigationDelegate?.topmostModal()?.present(navigationController!, animated: true) {
+                    webViewVC.loadTargetURL()
                 }
             }
         }
     }
     
-    
-    func presentEmailVerificationWebView()  {
-            self.presentWebViewWith(url: "https://digicelid.digicelgroup.com/management/identity/edit/email.do")
+    private func presentEmailVerificationWebView() {
+        self.presentWebViewWith(url: "https://digicelid.digicelgroup.com/management/identity/edit/email.do")
     }
     
-    public func handleRedirectUriUpdateMail() {
-   //     self.userDidSelectToClose()
-    }
-    
-    func continueSubscriptionFlow(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
-        if let digicelApi = digicelApi {
-                    digicelApi.registerToCleeng(api: self.getCleengApi(), completion: { (succeeded, error) in
-                        if succeeded == true {
-                            digicelApi.currentDigicelUser?.userType = .Basic
-                            DigicelCredentialsManager.saveDigicelUserType(type: .Basic)
-                            digicelApi.getSubscriberType(completion: { (inNetwotk, error) in
-                                if (inNetwotk){
-                                    digicelApi.getUserSubscriptions(completion: { (succeeded, plans, error) in
-                                        if (!succeeded){
-                                            self.closeOnlyLoginScreen(completion: {
-                                                completion(false, error)
-                                                return
-                                            })
-                                        }
-                                        if(plans?.count == 0){
-                                            if(self.checkValidCleengSubscription()){
-                                                self.closeOnlyLoginScreen(completion: {
-                                                    completion(true, error)
-                                                })
-                                            }else{
-                                                self.closeOnlyLoginScreen(completion: {
-                                                    completion(false, error)
-                                                    self.didComeBackFromDigicelOffers = true
-                                                    self.showSubscription()
-                                                })
-                                            }
-                                        }else{
-                                            digicelApi.currentDigicelUser?.userType = .Premium
-                                            DigicelCredentialsManager.saveDigicelUserType(type: .Premium)
-                                            if let plan = plans?.first as? DigicelPlan , let email = digicelApi.currentDigicelUser?.email{
-                                                digicelApi.cleengUpdateUserPackages(withEmail: email, plan: plan, completion: { (success, error) in
-                                                    if let date = plan.dateEnd{
-                                                        digicelApi.generateTokenForDigicelPlan(dateEnd: date, completion: { (success) in
-                                                            self.closeOnlyLoginScreen(completion: {
-                                                                completion(true, error)
-                                                            })
-                                                        })
-                                                    }
-                                                })
-                                            }
-                                            
-                                        }
-                                    })
-                                }else{
-                                    if self.isFreeAccess(){
-                                        digicelApi.freeAccessToken(completion: { (succeeded) in
-                                            self.closeOnlyLoginScreen(completion: {
-                                                completion(true, error)
-                                            })
-                                        })
-                                    }else{
-                                        if(self.checkValidCleengSubscription()){
-                                            self.closeOnlyLoginScreen(completion: {
-                                                completion(true, error)
-                                            })
-                                        }else{
-                                            self.closeOnlyLoginScreen(completion: {
-                                                completion(false, error)
-                                                self.didComeBackFromDigicelOffers = true
-                                                self.showSubscription()
-                                            })
-                                        }
-                                    }
-                                }
-                            })
-                }
-                else {
-                    self.closeOnlyLoginScreen(completion: {
-                        completion(false, error)
-                    })
-                }
-            })
+    private func syncWithCleeng(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
+        guard
+            let digicelApi = self.digicelApi,
+            let cleengPlugin = self.cleengLogin,
+            var digicelUser = digicelApi.currentDigicelUser,
+            let email = digicelUser.email else {
+                completion(false, nil)
+                return
         }
-    }
-    
-    func closeOnlyLoginScreen(completion: @escaping () -> ()){
-        if let navController = navigationController{
-            navController.dismiss(animated: true) {
-                completion()
-            }
-        }
-    }
-    
-    func closeSubscriptionsScreen(completion: @escaping () -> ()){
-        if  let vc = self.offersNavagationController?.viewControllers.first{
-            vc.dismiss(animated: true) {
-                completion()
-            }
-        }
-    }
-    
-    //check if the token expierd
-    func isTokenValid(token: String) -> Bool{
-        let tokenEncoded = token.components(separatedBy: ".")[1]
-        let dataDec = Data(base64Encoded: tokenEncoded)
-        guard let decodeString = String(data: dataDec!, encoding: .utf8)else{
-            return false
-        }
-        do{
-            let timeInt = try convertToDictionary(from: decodeString)["exp"] as? Int64
-            let currentTime = Int64((NSDate().timeIntervalSince1970 * 1000.0).rounded())
-            if(timeInt! * 1000 > currentTime) {
-                    return true
-            }
-        }catch{
-            return false
-        }
-        return false
-    }
-    
-    func convertToDictionary(from text: String) throws -> [String: Any] {
-        guard let data = text.data(using: .utf8) else { return [:] }
-        let anyResult: Any = try JSONSerialization.jsonObject(with: data, options: [])
-        return anyResult as? [String: Any] ?? [:]
-    }
-    
-    func getCleengApi() -> CleengLoginAndSubscribeApi? {
-        var cleengApi: CleengLoginAndSubscribeApi
         
-        if let api = cleengLogin.getApi() {
-            cleengApi = api
+        var didPresentSubscriptions = false
+        
+        func handleCleengRegistration(result: Result<Void, Error>) {
+            if case let .failure(error) = result {
+                completion(false, error)
+                return
+            }
+            
+            digicelUser.userType = .Basic
+            DigicelCredentialsManager.saveDigicelUser(digicelUser)
+            
+            digicelApi.fetchSubscriberType(completion: handleDigicelSubscriptionType)
         }
-        else {
-            let item = EmptyAPPurchasableItem()
-            let api = CleengLoginAndSubscribeApi(item: item, publisherId: cleengPublisherId)
-            cleengApi = api
+        
+        func handleDigicelSubscriptionType(inNetwork: Bool, error: Error?) {
+            if (inNetwork) {
+                digicelApi.fetchUserSubscriptions(completion: handleUserSubscriptions)
+            }
+            else {
+                completion(true, nil)
+            }
         }
-        return cleengApi
+        
+        func handleUserSubscriptions(succeeded: Bool, plans: [Any]?, error: Error?) {
+            guard succeeded else {
+                completion(false, nil)
+                return
+            }
+            
+            guard let plans = plans, plans.count > 0 else {
+                completion(true, nil)
+                return
+            }
+            
+            guard let _ = plans.first as? DigicelPlan else {
+                completion(false, nil)
+                return
+            }
+            
+            digicelUser.userType = .Premium
+            DigicelCredentialsManager.saveDigicelUser(digicelUser)
+                        
+            completion(true, nil)
+        }
+                
+        let authData = [
+            "email": email
+        ]
+        
+        cleengPlugin.signUp(authData: authData, completion: handleCleengRegistration)
     }
     
-    //MARK: - DigicelBaseProtocol
-
-    public func userDidSelectToClose() {
-        if let navController = navigationController {
-            navController.popToRootViewController(animated: true)
+    private func closeInnerScreen(completion: @escaping () -> ()) {
+        guard let navController = self.navigationController else {
+            completion()
+            return
         }
-        else {
-            loginCompletion?(.cancelled)
+        
+        navController.dismiss(animated: true) {
+            completion()
         }
     }
 }
 
-//MARK: - APTimedWebViewControllerDelegate
-
-public func timedWebViewController(_ timedVC: APTimedWebViewController!, shouldStartLoadWith request: URLRequest!, navigationType: WKNavigationType) -> Bool {
-    return true
-}
-
-//MARK: - Utils private classes
-
-/**
- An object to use when plugin presented on app launch (without any item to be played), since *ZappCleengLogin* requires at least one item.
- */
-private class EmptyAPPurchasableItem : APPurchasableItem {
-    override var authorizationProvidersIDs: NSArray! {
-        return []
-    }
-    
-    override func isLoaded() -> Bool {
+extension ZappDigicelLogin: APTimedWebViewControllerDelegate {
+    public func timedWebViewController(_ timedVC: APTimedWebViewController!, shouldStartLoadWith request: URLRequest!, navigationType: WKNavigationType) -> Bool {
         return true
     }
 }

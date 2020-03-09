@@ -5,7 +5,7 @@ install! 'cocoapods', :deterministic_uuids => false
 source 'git@github.com:applicaster/CocoaPods.git'
 source 'git@github.com:applicaster/CocoaPods-Private.git'
 source 'git@github.com:applicaster/PluginsBuilderCocoaPods.git'
-source 'git@github.com:applicaster/login-plugin-cleeng-ios.git'
+source 'git@github.com:sborkin/zapp-login-plugin-cleeng.git'
 source 'https://cdn.cocoapods.org/'
 
 def shared_pods
@@ -14,7 +14,7 @@ end
 target 'DigicelLoginPluginExample' do
     shared_pods
     pod 'DigicelLoginPlugin', :path => 'DigicelLoginPlugin.podspec'
-    pod 'CleengLogin'
+    pod 'CleengLoginDigicel'
 end
 
 pre_install do |installer|

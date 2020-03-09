@@ -7,7 +7,15 @@
 
 import Foundation
 
-class DigicelUser: NSObject {
+class DigicelUser: Codable {
+    enum UserType: String, Codable {
+        case Free = "free", Basic = "basic", Premium = "premium"
+    }
+    
+    enum SubscriberType: String, Codable {
+        case InNetwork = "inNetwork", OffNetwork = "offNetwork"
+    }
+    
     struct UserModelKeys {
         static let email = "email"
         static let password = "password"
@@ -17,79 +25,45 @@ class DigicelUser: NSObject {
         static let firstName = "firstName"
         static let lastName = "lastName"
         static let countryCode = "countryCode"
-        static let enabled = "enabled"
         static let international = "international"
-
+        static let enabled = "enabled"
     }
-    var object:[String:Any]?
-    var userType = UserType.Free
-    var token: DigicelToken?
-    var email: String?
-    var password: String?
-    var msisdn: String?
-    var userGuid: String?
-    var userId: Float?
-    var firstName: String?
-    var lastName: String?
-    var countryCode: String?
+    
+    let email: String?
+    let password: String?
+
+    let msisdn: String?
+    let userGuid: String?
+    let userId: Float?
+    
+    let firstName: String?
+    let lastName: String?
+
+    let countryCode: String?
+    let international: Bool?
+    
+    var digicelToken: DigicelToken? = nil
+    var digicelActivePlans: [DigicelPlan]? = nil
+    var subscriberType: SubscriberType? = nil
+    
     var enabled: Bool?
-    var international: Bool?
-    var digicelActivePlans: [DigicelPlan]?
-    var subscriberType: SubscriberType?
 
+    var userType = UserType.Free
     
-    override init() {
-        super.init()
-    }
-    
-    init(userEmail:String) {
-        super.init()
-        email = userEmail
-    }
-    
-    init?(dict:[String:Any]) {
-        super.init()
+    init(_ response: [String:Any]) {
+        email = response[UserModelKeys.email] as? String
+        password = response[UserModelKeys.password] as? String
         
-        object = dict
-        email = dict[UserModelKeys.email] as? String
-        password = dict[UserModelKeys.password] as? String
-        msisdn = dict[UserModelKeys.msisdn] as? String
-        userGuid = dict[UserModelKeys.userGuid] as? String
-        userId = dict[UserModelKeys.userId] as? Float
-        firstName = dict[UserModelKeys.firstName] as? String
-        lastName = dict[UserModelKeys.lastName] as? String
-        countryCode = dict[UserModelKeys.countryCode] as? String
-        enabled = dict[UserModelKeys.enabled] as? Bool
-        international = dict[UserModelKeys.international] as? Bool
+        msisdn = response[UserModelKeys.msisdn] as? String
+        userGuid = response[UserModelKeys.userGuid] as? String
+        userId = response[UserModelKeys.userId] as? Float
+        
+        firstName = response[UserModelKeys.firstName] as? String
+        lastName = response[UserModelKeys.lastName] as? String
+        
+        countryCode = response[UserModelKeys.countryCode] as? String
+        international = response[UserModelKeys.international] as? Bool
 
+        enabled = response[UserModelKeys.enabled] as? Bool
     }
-
-    func set(userToken: DigicelToken?) {
-        let t = userToken
-        token = t
-    }
-    
-    func set(userEmail: String?) {
-        let e = userEmail
-        email = e
-    }
-    
-    func set(activePlans: [DigicelPlan]?) {
-        let plans = activePlans
-        digicelActivePlans = plans
-    }
-    
-    func set(type: UserType?) {
-        userType = type!
-    }
-    
-    enum UserType: String {
-        case Free = "free", Basic = "basic", Premium = "premium"
-    }
-    
-    enum SubscriberType: String{
-        case InNetwotk = "inNetwotk", OffNetwork = "offNetwork"
-    }
-    
-    
 }

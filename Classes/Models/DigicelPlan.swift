@@ -7,7 +7,7 @@
 
 import Foundation
 
-class DigicelPlan: NSObject {
+class DigicelPlan: Codable {
     struct PlanModelKeys {
         static let name = "name"
         static let dateEnd = "dateEnd"
@@ -17,26 +17,22 @@ class DigicelPlan: NSObject {
         static let subscriptionId = "subscriptionId"
 
     }
-    var object:[String:Any]?
     
-    var name: String?
-    var dateEnd: Int64?
-    var dateStart: Int64?
-    var planDescription: String?
-    var planId: Int?
-    var subscriptionId: Int?
+    let name: String?
+    let dateEnd: Int64?
+    let dateStart: Int64?
+    let planDescription: String?
+    let planId: Int?
+    let subscriptionId: Int?
     
-    init?(dict:[String:Any]) {
-        super.init()
-        
-        object = dict
+    var cleengOfferId: String?
+
+    init?(dict: [String:Any]) {
         name = dict[PlanModelKeys.name] as? String
         dateEnd = dict[PlanModelKeys.dateEnd] as? Int64
         dateStart = dict[PlanModelKeys.dateStart] as? Int64
         planDescription = dict[PlanModelKeys.description] as? String
         planId = dict[PlanModelKeys.planId] as? Int
         subscriptionId = dict[PlanModelKeys.subscriptionId] as? Int
-
     }
-    
 }

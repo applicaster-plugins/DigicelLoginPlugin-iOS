@@ -15,6 +15,9 @@ public struct ZappDigicelConfiguration {
     let couponRedeemAvailable: Bool
     let localization: ZappDigicelLoginLocalization
     
+    public let cleengOfferId: String?
+    public let premiumAuthId: String?
+
     public init(configuration: [String: Any]) {
         if let help = (configuration["cleeng_login_help_url"] as? String), help.isEmpty == false {
             self.helpURL = URL(string: help)
@@ -24,6 +27,10 @@ public struct ZappDigicelConfiguration {
         self.facebookLoginSupported = Bool(configuration["cleeng_login_facebook_login_available"]) ?? true
         self.restoreSupported = Bool(configuration["cleeng_login_purchase_restore_available"]) ?? true
         self.couponRedeemAvailable = Bool(configuration["cleeng_login_redeem_coupon_available"]) ?? false
+        
+        self.cleengOfferId = configuration["Sportsmax_offer_id"] as? String
+        self.premiumAuthId = configuration["digicel_user_access_auth_id"] as? String
+                
         self.localization = ZappDigicelLoginLocalization(configuration: configuration)
     }
     

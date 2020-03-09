@@ -30,7 +30,7 @@ class DigicelLoginViewController: UIViewController {
         if let config = configuration {
             config.localization.setLabelText(label: loginTitle, textKey: .welcomeScreenDigicelTitle)
             config.localization.setLabelText(label: loginSecondTitle, textKey: .welcomeScreenDigicelSecondTitle)
-             config.localization.setLabelStyle(label: loginSecondTitle, colorForKey:.welcomeScreenDigicelSecondTitleColor, fontSizeKey: .welcomeScreenDigicelTitleSize, fontNameKey: .welcomeScreenDigicelTitleFont)
+            config.localization.setLabelStyle(label: loginSecondTitle, colorForKey:.welcomeScreenDigicelSecondTitleColor, fontSizeKey: .welcomeScreenDigicelTitleSize, fontNameKey: .welcomeScreenDigicelTitleFont)
             config.localization.setLabelStyle(label: loginTitle, colorForKey:.welcomeScreenDigicelTitleColor, fontSizeKey: .welcomeScreenDigicelTitleSize, fontNameKey: .welcomeScreenDigicelTitleFont)
             config.localization.setLabelText(label: loginDescription, textKey: .welcomeScreenDigicelDescription)
             config.localization.setLabelStyle(label: loginDescription, colorForKey:.welcomeScreenDigicelDescriptionColor, fontSizeKey: .welcomeScreenDigicelDescriptionSize, fontNameKey: .welcomeScreenDigicelDescriptionFont)
@@ -45,23 +45,22 @@ class DigicelLoginViewController: UIViewController {
             closeBtn.setImage(UIImage(named: "cleeng_login_close_button"), for: .normal)
             closeBtn.tintColor = UIColor.black
         }
-       
     }
     
     @IBAction func closeBtnDidPress(_ sender: UIButton) {
-        if let delegate = loginProtocol{
-                   delegate.closeLoginScreen()
+        if let delegate = loginProtocol {
+            delegate.closeLoginScreen()
         }
     }
     
     @IBAction func createAccountDidPress(_ sender: UIButton) {
-        if let delegate = loginProtocol{
+        if let delegate = loginProtocol {
             delegate.actionSelected(register: true)
         }
     }
     
     @IBAction func LogInDidPress(_ sender: UIButton) {
-        if let delegate = loginProtocol{
+        if let delegate = loginProtocol {
             delegate.actionSelected(register: false)
         }
     }

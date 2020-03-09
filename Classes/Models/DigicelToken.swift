@@ -8,34 +8,30 @@
 import Foundation
 
 
-class DigicelToken: NSObject {
+struct DigicelToken: Codable {
     struct TokenModelKeys {
+        static let accessToken = "access_token"
         static let expiresIn = "expires_in"
         static let type = "token_type"
-        static let accessToken = "access_token"
         static let refreshToken = "refresh_token"
-        
     }
-    var object:[String:Any]?
     
-    var expiresIn: Float?
-    var type: String?
-    var accessToken: String?
-    var refreshToken: String?
-    
-    init?(dict:[String:Any]) {
-        super.init()
+    let accessToken: String
+
+    let expiresIn: Float?
+    let type: String?
+    let refreshToken: String?
         
-        object = dict
-        expiresIn = dict[TokenModelKeys.expiresIn] as? Float
-        type = dict[TokenModelKeys.type] as? String
-        accessToken = dict[TokenModelKeys.accessToken] as? String
-        refreshToken = dict[TokenModelKeys.refreshToken] as? String
+    init?(_ response: [String: Any]) {
+        guard let accessToken = response[TokenModelKeys.accessToken] as? String else {
+            return nil
+        }
+        
+        self.accessToken = accessToken
+
+        self.expiresIn = response[TokenModelKeys.expiresIn] as? Float
+        self.type = response[TokenModelKeys.type] as? String
+        self.refreshToken = response[TokenModelKeys.refreshToken] as? String
 
     }
-    
-    override init() {
-        super.init()
-    }
-    
 }

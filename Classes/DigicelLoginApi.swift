@@ -6,364 +6,248 @@
 //
 
 import Foundation
-import CleengLogin
+import CleengLoginDigicel
 import ZappPlugins
-import ZappLoginPluginsSDK
-import ApplicasterSDK
+import Alamofire
 
 let kDigicelLoginAndSubscribeApiErrorDomain = "DigicelLoginAndSubscribeApi"
 
+enum ErrorType: Int {
+    case unknown = -1
+    case anotherLoginOrSignupInProcess = -2
+    case alreadyLoggedInWithAnotherUser = -3
+    case currentItemHasNoAuthorizationProvidersIDs = -5
+    case subscriptionVerificationTimeOut = -6
+    case loadTokensTimeOut = -7
+    case noStoreProduct = -8
+    case itemDataIsNotLoadedYet = -9
+    case itemIsNotAvailable = -14
+    
+    case storeJsonDecodeError = -10
+    case storeNotHaveReceiptData = -11
+    case storeNoRemoteData = -12
+    case storeReceiptInvalid = -13
+    
+    case invalideCustomerToken = 1
+    case offerNotExist = 4
+    case apiRequireEnterpriseAccount = 5
+    case badCustomerEmailOrCustomerNotExist = 10
+    case missingEmailOrPassword_orInvalideCustomerData = 11
+    case inactiveCustomerAccount = 12
+    case customerAlreadyExist = 13
+    case ipAddressLimitExceeded = 14
+    case invalideCustomerCredentials = 15
+    case invalideResetPasswordTokenOrResetUrl = 16
+    
+    var error: Error {
+        var userInfo: [String:Any]?
+        if let message = self.errorMessage {
+            userInfo = [NSLocalizedDescriptionKey : message]
+        }
+        return NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: self.rawValue, userInfo: userInfo) as Error
+    }
+    
+    private var errorMessage: String? {
+        switch self {
+        case .alreadyLoggedInWithAnotherUser:
+            return "Please logout before trying to login with another user"
+        default:
+            return nil
+        }
+    }
+}
+
 class DigicelLoginApi {
+    private enum ApiType: String {
+        case getAccessToken = "oauth2/token"
+        case getUserAccount = "account?scope=GET_ACCOUNT"
+        case getUserSubscriptions = "me/provisioning/subscriptions?status=active"
+    }
     
     public var configurationJSON: NSDictionary?
     var currentDigicelUser: DigicelUser?
-    var digicelToken: DigicelToken?
-    /// Cleeng publisher id
-    let publisherId: String
-    let cleengWebServiceURL: String = "https://applicaster-cleeng-sso.herokuapp.com"
     let digiCelWebServiceURL: String
     let digicelRedirectUri = "https://applicaster.sportsmax/auth/"
     let digicelSecretKey: String
     let digicelClientID: String
-
-
+    
     required init(configurationJSON: NSDictionary?) {
-        
-        //mandatory params
-        let publisherId: String! = configurationJSON?["cleeng_login_publisher_id"] as? String
-        self.publisherId = publisherId
-        
-        let digicelSecretKey: String! = configurationJSON?["digicel_secret"] as? String
+        self.configurationJSON = configurationJSON
+
+        let digicelSecretKey: String! = configurationJSON?["digicel_secret"] as? String ?? ""
         self.digicelSecretKey = digicelSecretKey
         
-        let digicelClientID: String! = configurationJSON?["digicel_client_id"] as? String
+        let digicelClientID: String! = configurationJSON?["digicel_client_id"] as? String ?? ""
         self.digicelClientID = digicelClientID
         
         self.digiCelWebServiceURL = configurationJSON?["digicel_base_url"] as? String ?? "https://digicelid.digicelgroup.com/selfcarev2"
         
-        self.configurationJSON = configurationJSON
-        self.currentDigicelUser = DigicelUser()
-        if let digicelToken  = DigicelCredentialsManager.getDigicelUserToken(){
-            self.digicelToken = DigicelToken()
-            self.digicelToken?.accessToken = digicelToken
-        }
-        if let userEmail  = DigicelCredentialsManager.getDigicelUserEmail(){
-            currentDigicelUser?.email = userEmail
-        }
-        if let userType = DigicelCredentialsManager.getDigicelUserType(){
-            currentDigicelUser?.userType = userType
-        }
-        if let subscriptionType = DigicelCredentialsManager.getDigicelSubscriberType(){
-            currentDigicelUser?.subscriberType = subscriptionType
-        }
+        self.currentDigicelUser = DigicelCredentialsManager.loadDigicelUser()
     }
     
-    //MARK: - Digicel API'S
-    
-    /// Call this api to get Digicel access token.
-    /// - Parameter completion: The closure to execute when finish
-    public func getAccessTokenWith(authCode: String?, completion: @escaping ((_ succeeded: Bool, _ accessToken: String?, _ error: Error?) -> Void)) {
-        guard let code = authCode else {
-            completion(false, nil ,NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
-            return
+    public func handleOAuthFlow(authCode: String, completion: @escaping ((_ digicelUser: DigicelUser?, _ error: Error?) -> Void)) {
+        func handleUserAccount(_ digicelUser: DigicelUser) {
+            self.currentDigicelUser = digicelUser
+            DigicelCredentialsManager.saveDigicelUser(digicelUser)
+            
+            completion(digicelUser, nil)
         }
         
-        let params = String(format: "code=%@&client_id=%@&client_secret=%@&redirect_uri=%@&grant_type=%@", encode(string: code),self.digicelClientID,self.digicelSecretKey,encode(string: digicelRedirectUri),"authorization_code")
+        func handleAccessToken(_ digicelToken: DigicelToken) {
+            self.fetchUserAccount(digicelToken.accessToken) { (succeeded, digicelUser, error) in
+                guard succeeded, let digicelUser = digicelUser else {
+                    completion(nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
+                    return
+                }
+                
+                digicelUser.digicelToken = digicelToken
+                handleUserAccount(digicelUser)
+            }
+        }
         
-        makePostRequest(apiName: "oauth2/token", params: params) { [weak self] (response, _, error) in
-            guard let strongSelf = self else {
+        self.fetchAccessToken(authCode) { (succeeded, digicelToken, error) in
+            guard succeeded, let digicelToken = digicelToken else {
+                completion(nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
                 return
             }
             
-            if let response = response as? [String : Any] {
-                guard let token = response["access_token"] as? String,
-                    token.isEmpty == false else {
-                    return completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-                }
-                let dgToken = DigicelToken.init(dict: response)
-                strongSelf.digicelToken = dgToken
-                DigicelCredentialsManager.saveDigicelUserToken(token: token)
-                completion(true, token ,nil)
-            } else {
-                completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-            }
+            handleAccessToken(digicelToken)
         }
     }
     
-    /// Call this api to get Digicel user account.
-    func getUserAccountWith(accessToken: String?, completion: @escaping ((_ succeeded: Bool, _ response: [String:Any]?, _ error: Error?) -> Void)) {
-        guard let accessToken = accessToken else {
-            completion(false, nil, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
-            return
+    func fetchUserSubscriptions(completion: @escaping ((_ succeeded: Bool, _ response: [Any]?, _ error: Error?) -> Void)) {
+        guard
+            let digicelUser = self.currentDigicelUser,
+            let accessToken = digicelUser.digicelToken?.accessToken else {
+                completion(false, nil, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
+                return
         }
-        let apiName = "account?scope=GET_ACCOUNT"
-        let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
-        let request = NSMutableURLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
-        makeRequest(request: request) { [weak self] (response, _, error) in
-            if let response = response as? [String:Any] {
-                completion(true, response, nil)
-            } else {
-                completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-            }
-        }
-    }
-    
-    /// Call this api to get Digicel user Subscriptions.
-    func getUserSubscriptions(completion: @escaping ((_ succeeded: Bool, _ response: [Any]?, _ error: Error?) -> Void)) {
-        guard let digicelToken = digicelToken,
-            let accessToken = digicelToken.accessToken else {
-            completion(false, nil, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
-            return
-        }
         let apiName = "me/provisioning/subscriptions?status=active"
         let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
         let request = NSMutableURLRequest(url: url)
+        
         request.httpMethod = "GET"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("en_US", forHTTPHeaderField: "Lang")
         request.setValue("5000341", forHTTPHeaderField: "AndroidVer")
         request.setValue("SPORTSMAX", forHTTPHeaderField: "Source")
         request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
-        request.setValue("no-cach", forHTTPHeaderField: "Cache-Control")
-
-        makeRequest(request: request) { [weak self] (response, _, error) in
-            guard let strongSelf = self else {
-                return
-            }
-            if var response = response as? [Any] {
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        
+        makeRequest(request: request) { (response, _, error) in
+            if let response = response as? [Any] {
                 var activePlans = [DigicelPlan]()
+                
                 for index in 0..<response.count {
                     if  let plan = response[index] as? [String : Any],
-                        let subscriptions = plan["subscriptions"] as? [Any]{
-                        for i in 0..<subscriptions.count {
-                            if (plan["groupName"] as? String == "SPORTSMAX"){
+                        let subscriptions = plan["subscriptions"] as? [Any] {
+                        for i in 0 ..< subscriptions.count {
+                            if (plan["groupName"] as? String == "SPORTSMAX") {
                                 if let subscription = subscriptions[i] as? [String : Any],
-                                    let digicelPlan = DigicelPlan.init(dict: subscription) {
+                                    let digicelPlan = DigicelPlan(dict: subscription) {
                                     activePlans.append(digicelPlan)
-                                    DigicelCredentialsManager.saveDigicelPlanes(dic: subscription)
                                 }
                             }
                         }
                     }
                 }
-                strongSelf.currentDigicelUser?.set(activePlans: activePlans)
+                
+                digicelUser.digicelActivePlans = activePlans
+                DigicelCredentialsManager.saveDigicelUser(digicelUser)
+
                 completion(true, activePlans, nil)
-            } else {
+            }
+            else {
                 completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
             }
         }
     }
     
-    //MARK: - Cleeng API'S
-    /// register to cleeng and get token / if user email already exists - get token
-    func registerToCleeng(api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
-        if let user = currentDigicelUser,
-            let email = user.email {
-            //Try to signup
-            self.cleengRegisterCustomer(withEmail: email, api: api) { (succeeded, error) in
-                //Signup has failed. If we tried to signup with email account & we got that user already exist, then make a login with email and publisherId without giving the user any indication
-                if let error = error as NSError? {
-                    if error.code == ErrorType.customerAlreadyExist.rawValue {
-                        // generate cleeng customer token
-                        self.cleengGenerateCustomerToken(withEmail: email, api: api, completion: completion)
-                    }
-                }
-                else {
-                    completion(false, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-                }
-            }
-        }
-        else {
-           completion(false, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-        }
-    }
-    
-    /// Call this api to generate cleeng customer token.
-    func cleengGenerateCustomerToken(withEmail email: String, api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
-        let apiName = "generateCustomerToken"
-        let url = URL(string: "\(cleengWebServiceURL)/\(apiName)")!
-        let request = NSMutableURLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let params: [String:Any] = ["email" : email,
-                                    "publisherId" : self.publisherId]
-        request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
-        
-        makeRequest(request: request) { [weak self] (response, _, error) in
-            if let response = response,
-                let api = api {
-                api.updateDataWith(email: email, response: response, error: error, completion: { (succeeded, error) in
-                    completion(succeeded, error)
-                })
-            } else {
-                completion(false, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-            }
-        }
-    }
-    
-    //
-    func cleengUpdateUserPackages(withEmail email: String , plan: DigicelPlan , completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)){
-        let cleengPublisherToken = configurationJSON?["cleeng_publisher_token"] as? String ?? "ZNXDbmhgC6tL9w5eZzWybTCvniw_b-sIcQz4JlEroAsRq457"
-        let apiName = "https://v0f6004sjg.execute-api.us-west-2.amazonaws.com/prod/subscriptions/create"
-        let url = URL(string: apiName)!
-        let request = NSMutableURLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(cleengPublisherToken)", forHTTPHeaderField: "Authorization")
-        guard let planId = plan.planId , let subscriptionId = plan.subscriptionId , let dateEnd = plan.dateEnd else {
-            return
-        }
-        let params: [String:Any] = ["email" : email , "planId" : planId , "subscriptionId" : subscriptionId , "dateEnd" : dateEnd ]
-        request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
-        makeRequest(request: request) { [weak self] (reasult,  response, error) in
-            if (response?.statusCode == 200){
-                if let response = reasult as? [String:Any] , let offerid = response["cleengOfferId"] as? String{
-                    DigicelCredentialsManager.saveDigicelPlanOfferId(type: offerid)
-                }
-                completion(true, nil)
-            }else if (response?.statusCode == 400){
-                if let jsonResponse = reasult as? [String:Any] , let offerid = jsonResponse["errorMessage"] as? String, let offerFromPlugin = self?.configurationJSON?["Sportsmax_offer_id"] as? String {
-                    if(offerid.contains(offerFromPlugin)){
-                        DigicelCredentialsManager.saveDigicelPlanOfferId(type: offerFromPlugin)
-                        completion(true, nil)
-                    }else{
-                        completion(false, nil)
-                    }
-                }
-            }else{
-                completion(false, nil)
-            }
-        }
-    }
-    
-    func getSubscriberType(completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)){
-        guard let digicelToken = digicelToken,
-            let accessToken = digicelToken.accessToken else {
+    func fetchSubscriberType(completion: @escaping ((_ inNetwork: Bool, _ error: Error?) -> Void)) {
+        guard
+            let digicelUser = self.currentDigicelUser,
+            let accessToken = digicelUser.digicelToken?.accessToken else {
                 completion(false, NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.invalideCustomerToken.rawValue, userInfo: nil) as Error)
                 return
         }
+        
         let apiname = "me/profile/subscribertype"
         let url = URL(string: "\(digiCelWebServiceURL)/\(apiname)")
         let request = NSMutableURLRequest(url: url!)
+        
         request.httpMethod = "GET"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("en", forHTTPHeaderField: "Lang")
-        request.setValue("no-cach", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.setValue("digicelid.digicelgroup.com", forHTTPHeaderField: "Host")
         
-        makeRequest(request: request) { [weak self] (result, response, error) in
-            if (response?.statusCode == 200){
-                self?.currentDigicelUser?.subscriberType = .InNetwotk
-                completion(true,error)
-            }else if(response?.statusCode == 404){
-                self?.currentDigicelUser?.subscriberType = .OffNetwork
-                completion(false,error)
+        makeRequest(request: request) { (result, response, error) in
+            guard let response = response else {
+                completion(false, nil)
+                return
             }
-            DigicelCredentialsManager.saveDigicelSubscriberType(type: self?.currentDigicelUser?.subscriberType)
-        }
-     }
-    
-    func freeAccessToken(completion: @escaping ((_ succeeded: Bool) -> Void)){
-        guard let freeAccessAuthId = configurationJSON?["digicel_user_access_auth_id"] as? String else {
-            completion(false)
-            return
-        }
-       let timestamp = NSDate().addingDays(30)?.timeIntervalSince1970
-       let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
-       let url = "timestamp=\(timestamp!)&uuid=\(uuid!)"
-       let data = (url).data(using: String.Encoding.utf8)
-       let base64URL = data!.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
-       let tokenUrl = "sportsmaxds://fetchData?type=SPORTSMAX_TOKEN&url=" + base64URL ;
-       let atom =   APAtomFeed.init(url: tokenUrl)
-        APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
-            if(sucsses){
-                if let token  = model?.extensions["auth_token"] as? String{
-                    APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID:freeAccessAuthId)
-                    CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
-                    completion(true)
-                }else{
-                    completion(false)
-                }
-            }else{
-                completion(false)
+            
+            if (response.statusCode == 200) {
+                digicelUser.subscriberType = .InNetwork
             }
+            else if (response.statusCode == 404) {
+                digicelUser.subscriberType = .OffNetwork
+            }
+            else {
+                completion(false, nil)
+                return
+            }
+            
+            DigicelCredentialsManager.saveDigicelUser(digicelUser)
+            completion(true, nil)
         }
     }
-    
-    func generateTokenForDigicelPlan(dateEnd: Int64 ,completion: @escaping ((_ succeeded: Bool) -> Void)){
-        guard let authId = configurationJSON?["digicel_user_access_auth_id"] as? String else{
-            completion(false)
-            return
-        }
+}
+
+// MARK: - Private
+extension DigicelLoginApi {
+    fileprivate func fetchAccessToken(_ authCode: String, completion: @escaping ((_ succeeded: Bool, _ digicelToken: DigicelToken?, _ error: Error?) -> Void)) {
+        let params = String(format: "code=%@&client_id=%@&client_secret=%@&redirect_uri=%@&grant_type=%@", encode(string: authCode), self.digicelClientID, self.digicelSecretKey, encode(string: digicelRedirectUri),"authorization_code")
         
-        let timestamp = NSDate().timeIntervalSince1970 + Double(exactly: dateEnd)!
-        let uuid = ZAAppConnector.sharedInstance().identityDelegate.getDeviceId()
-        let url = "timestamp=\(timestamp)&uuid=\(uuid!)"
-        let data = (url).data(using: String.Encoding.utf8)
-        let base64URL = data!.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
-        let tokenUrl = "sportsmaxds://fetchData?type=SPORTSMAX_TOKEN&url=" + base64URL ;
-        let atom =   APAtomFeed.init(url: tokenUrl)
-        APAtomFeedLoader.load(model: atom!) { (sucsses, model) in
-            if(sucsses){
-                if let token  = model?.extensions["auth_token"] as? String{
-                    APAuthorizationManager.sharedInstance().setAuthorizationToken(token, withAuthorizationProviderID: authId)
-                   // CleengLoginAndSubscribeApi.updateCleengUserToken(token: token)
-                    completion(true)
-                }else{
-                    completion(false)
-                }
-            }else{
-                completion(false)
+        makePostRequest(apiName: "oauth2/token", params: params) { (response, _, error) in
+            guard
+                let response = response as? [String : Any],
+                let token = response["access_token"] as? String,
+                !token.isEmpty else {
+                    completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
+                    return
             }
+            
+            let digicelToken = DigicelToken(response)
+            completion(true, digicelToken, nil)
         }
     }
     
-    func cleengRegisterCustomer(withEmail email: String, api: CleengLoginAndSubscribeApi?, completion: @escaping ((_ succeeded: Bool, _ error: Error?) -> Void)) {
-        let apiName = "register"
-        let url = URL(string: "\(cleengWebServiceURL)/\(apiName)")!
+    fileprivate func fetchUserAccount(_ accessToken: String, completion: @escaping ((_ succeeded: Bool, _ digicelUser: DigicelUser?, _ error: Error?) -> Void)) {
+        let apiName = "account?scope=GET_ACCOUNT"
+        let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
+        
         let request = NSMutableURLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
-        let locale = Locale.current
-        guard let country = (locale as NSLocale).object(forKey: .countryCode) as? String else {
-            completion(false, NSError(domain: "NSLocale", code: -1, userInfo: [NSLocalizedDescriptionKey : "NSLocale has no Country code"]) as Error)
-            return
-        }
-       
-        let params = [
-            "publisherId" : self.publisherId,
-            "email" : email,
-            "country" : country,
-            "locale" : "en_US",//localeIdentifier (Cleeng can't support locale such as en_IL)
-            "currency" : "USD"//currency (Cleeng can't support currency such as ILS)
-        ]
-        
-        request.httpBody = try! JSONSerialization.data(withJSONObject: params, options: .prettyPrinted)
-        
-        makeRequest(request: request) { [weak self] (response, _, error) in
-            if let response = response,
-                let api = api {
-                api.updateDataWith(email: email, response: response, error: error, completion: { (succeeded, error) in
-                    completion(succeeded, error)
-                })
-            } else {
-                completion(false, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
+        makeRequest(request: request) { (response, _, error) in
+            guard let response = response as? [String: Any] else {
+                completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
+                return
             }
+                            
+            let digicelUser = DigicelUser(response)
+            completion(true, digicelUser, nil)
         }
     }
-    
-    
-    //MARK: - Make requests
-    
-    private func makePostRequest(apiName: String, params: String, completion: @escaping ((_ result: Any?, _ httpResponse: HTTPURLResponse?, _ error: Error?) -> Void)) {
-        
+}
+
+// MARK: - Helpers
+extension DigicelLoginApi {
+    fileprivate func makePostRequest(apiName: String, params: String, completion: @escaping ((_ result: Any?, _ httpResponse: HTTPURLResponse?, _ error: Error?) -> Void)) {
         let updatedParams = params
-        print("Send request: \(apiName) with params: \(updatedParams)")
         
         let url = URL(string: "\(digiCelWebServiceURL)/\(apiName)")!
         let request = NSMutableURLRequest(url: url)
@@ -377,136 +261,36 @@ class DigicelLoginApi {
         }
     }
     
-    
-    private func makeRequest(request: NSMutableURLRequest, completion: @escaping ((_ result: Any?, _ httpResponse: HTTPURLResponse?, _ error: Error?) -> Void)) {
-        
-        let task = URLSession.shared.dataTask(with: request as URLRequest) { (data, response, error) in
-            guard let data = data , let json = (try? JSONSerialization.jsonObject(with: data, options: [])) else {
-                let err = error ?? (NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: DigicelLoginApi.ErrorType.unknown.rawValue, userInfo: nil) as Error)
-                DispatchQueue.onMain {
-                    completion(nil, (response as? HTTPURLResponse), err)
-                }
+    fileprivate func makeRequest(request: NSMutableURLRequest, completion: @escaping ((_ result: Any?, _ httpResponse: HTTPURLResponse?, _ error: Error?) -> Void)) {
+        let request = request as URLRequest
+        Alamofire.request(request).responseJSON { (responseObject) in
+            guard case let .success(value) = responseObject.result else {
+                completion(nil, responseObject.response, responseObject.error)
                 return
             }
             
-            print("Response: \(json)")
-            if let json = json as? [String:Any] , let code = json["code"] as? Int {
+            if let object = value as? [String: Any], let code = object["code"] as? Int { // assume the code in response indicates failure
                 let error: NSError
-                if let message = json["message"] as? String {
+                if let message = object["message"] as? String {
                     error = NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: code, userInfo: [NSLocalizedDescriptionKey : message])
-                } else {
+                }
+                else {
                     error = NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: code, userInfo: nil)
                 }
                 
-                DispatchQueue.onMain {
-                    completion(nil, (response as? HTTPURLResponse), error as Error)
-                }
+                completion(nil, responseObject.response, error)
+                return
             }
-            else {
-                DispatchQueue.onMain {
-                    completion(json, (response as? HTTPURLResponse), error)
-                }
-            }
+            
+            completion(value, responseObject.response, nil)
         }
+    }
         
-        task.resume()
-    }
-    
-    //MARK: - digicel api for token and account info
-    /// getting access token and digicel account
-    public func continueOAuthFlow(authCode: String?, completion: @escaping ((_ succeeded: Bool, _ response: Any?, _ error: Error?) -> Void)) {
-        getAccessTokenWith(authCode: authCode) { (succeeded, accessToken, error) in
-            if succeeded == true {
-                // update the digi token model
-                self.getUserAccountWith(accessToken: accessToken, completion: { (succeeded, response, error) in
-                    if succeeded == true {
-                        if let response = response {
-                            // Create digicel user
-                            let user = DigicelUser.init(dict: response)
-                            self.currentDigicelUser = user
-                            DigicelCredentialsManager.saveDigicelUserEmail(email: user?.email)
-                            return completion(true, response, nil)
-                        }
-                        else {
-                            return completion(true, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-                        }
-                    }
-                    else {
-                        return completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-                    }
-                })
-            }
-            else {
-                return completion(false, nil, error ?? NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: ErrorType.unknown.rawValue, userInfo: nil) as Error)
-            }
-        }
-    }
-    
-    //MARK: - Helpers
-
-    private func encode(string: String) -> String {
+    fileprivate func encode(string: String) -> String {
         var retVal = ""
         if let encodedStr = string.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "!*'();:@&=+$,/?%#[]{} ").inverted) {
             retVal = encodedStr
         }
         return retVal
     }
-    
-    //MARK: - Api names
-    
-    enum ApiType: String {
-        case getAccessToken = "oauth2/token"
-        case getUserAccount = "account?scope=GET_ACCOUNT"
-        case getUserSubscriptions = "me/provisioning/subscriptions?status=active"
-        case cleengGenerateCustomerToken  = "generateCustomerToken"
-    }
-
-    //MARK: - Errors
-    
-    enum ErrorType: Int {
-        case unknown = -1
-        case anotherLoginOrSignupInProcess = -2
-        case alreadyLoggedInWithAnotherUser = -3
-        case currentItemHasNoAuthorizationProvidersIDs = -5
-        case subscriptionVerificationTimeOut = -6
-        case loadTokensTimeOut = -7
-        case noStoreProduct = -8
-        case itemDataIsNotLoadedYet = -9
-        case itemIsNotAvailable = -14
-        
-        case storeJsonDecodeError = -10
-        case storeNotHaveReceiptData = -11
-        case storeNoRemoteData = -12
-        case storeReceiptInvalid = -13
-        
-        case invalideCustomerToken = 1
-        case offerNotExist = 4
-        case apiRequireEnterpriseAccount = 5
-        case badCustomerEmailOrCustomerNotExist = 10
-        case missingEmailOrPassword_orInvalideCustomerData = 11
-        case inactiveCustomerAccount = 12
-        case customerAlreadyExist = 13
-        case ipAddressLimitExceeded = 14
-        case invalideCustomerCredentials = 15
-        case invalideResetPasswordTokenOrResetUrl = 16
-        
-        var error: Error {
-            var userInfo: [String:Any]?
-            if let message = self.errorMessage {
-                userInfo = [NSLocalizedDescriptionKey : message]
-            }
-            return NSError(domain: kDigicelLoginAndSubscribeApiErrorDomain, code: self.rawValue, userInfo: userInfo) as Error
-        }
-        
-        private var errorMessage: String? {
-            switch self {
-            case .alreadyLoggedInWithAnotherUser:
-                return "Please logout before trying to login with another user"
-            default:
-                return nil
-            }
-        }
-    }
-    
 }
-

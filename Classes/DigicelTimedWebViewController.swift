@@ -8,7 +8,6 @@
 import Foundation
 import ApplicasterSDK
 import ZappPlugins
-import ZappLoginPluginsSDK
 
 let kCallbackURL = "https://applicaster.sportsmax";
 let kCallBackMailURL = "https://digicelid.digicelgroup.com/management/identity.do?"
@@ -29,7 +28,7 @@ class DigicelTimedWebViewController: APTimedWebViewController {
         let request = navigationAction.request
         
         if let urlString = request.url?.absoluteString {
-            if((urlString.range(of: kCallBackMailURL) != nil)){
+            if((urlString.range(of: kCallBackMailURL) != nil)) {
                 self.redirectUriDelegate.handleRedirectUriUpdateMail()
             }
         }
