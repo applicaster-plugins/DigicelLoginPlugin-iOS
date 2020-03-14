@@ -16,14 +16,13 @@ Pod::Spec.new do |s|
 
   s.subspec 'Core' do |c|
     c.frameworks = 'UIKit'
-
     c.source_files = 'Classes/**/*.{swift}'
     c.resources = ['Resources/**/*.{xib,png}']
 
+    c.dependency 'Alamofire'
     c.dependency 'ZappPlugins'
     c.dependency 'ApplicasterSDK'
-    c.dependency 'CleengLoginDigicel'
-    c.dependency 'Alamofire'
+    c.dependency 'CleengLoginDigicel', '~> 1.0.0'
 
   end
 

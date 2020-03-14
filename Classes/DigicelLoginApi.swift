@@ -164,7 +164,7 @@ class DigicelLoginApi {
         }
     }
     
-    func fetchSubscriberType(completion: @escaping ((_ inNetwork: Bool, _ error: Error?) -> Void)) {
+    func fetchSubscriberType(completion: @escaping ((_ success: Bool, _ error: Error?) -> Void)) {
         guard
             let digicelUser = self.currentDigicelUser,
             let accessToken = digicelUser.digicelToken?.accessToken else {

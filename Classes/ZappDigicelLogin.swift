@@ -224,6 +224,7 @@ extension ZappDigicelLogin: ZPAppLoadingHookProtocol {
 extension ZappDigicelLogin: DigicelRedirectUriProtocol, DigicelBaseProtocol, LoginProtocol {
     public func handleRedirectUriWith(params: [String : Any]?) {
         guard let params = params, let code = params["code"] as? String else {
+            self.loginCompletion?(false, nil, nil)
             return
         }
         
@@ -269,6 +270,7 @@ extension ZappDigicelLogin {
     
     private func handleOAuthFlow(redirectCode: String) {
         guard let digicelApi = self.digicelApi else {
+            self.loginCompletion?(false, nil, nil)
             return
         }
         
@@ -290,7 +292,6 @@ extension ZappDigicelLogin {
     }
     
     private func displayErrorAlert(message: ZappDigicelLoginLocalization.Key = .errorInternalMessage) {
-        // let title = self.configuration?.localization.localizedString(for: .errorInternalTitle, defaultString: NSLocalizedString("Error", comment: "Error"))
         let message = self.configuration?.localization.localizedString(for: message)
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
         
@@ -298,6 +299,7 @@ extension ZappDigicelLogin {
             guard let strongSelf = self else { return }
             if let vc = strongSelf.navigationController?.presentingViewController {
                 vc.dismiss(animated: true, completion: {
+                    self?.loginCompletion?(false, nil, nil)
                 })
             }
         }))
@@ -410,29 +412,6 @@ extension ZappDigicelLogin {
                 return
         }
         
-        var didPresentSubscriptions = false
-        
-        func handleCleengRegistration(result: Result<Void, Error>) {
-            if case let .failure(error) = result {
-                completion(false, error)
-                return
-            }
-            
-            digicelUser.userType = .Basic
-            DigicelCredentialsManager.saveDigicelUser(digicelUser)
-            
-            digicelApi.fetchSubscriberType(completion: handleDigicelSubscriptionType)
-        }
-        
-        func handleDigicelSubscriptionType(inNetwork: Bool, error: Error?) {
-            if (inNetwork) {
-                digicelApi.fetchUserSubscriptions(completion: handleUserSubscriptions)
-            }
-            else {
-                completion(true, nil)
-            }
-        }
-        
         func handleUserSubscriptions(succeeded: Bool, plans: [Any]?, error: Error?) {
             guard succeeded else {
                 completion(false, nil)
@@ -454,7 +433,33 @@ extension ZappDigicelLogin {
                         
             completion(true, nil)
         }
-                
+        
+        func handleDigicelSubscriptionType(success: Bool, error: Error?) {
+            guard success, let subscriberType = digicelUser.subscriberType else {
+                completion(false, error)
+                return
+            }
+            
+            if (subscriberType == .InNetwork) {
+                digicelApi.fetchUserSubscriptions(completion: handleUserSubscriptions)
+            }
+            else {
+                completion(true, nil)
+            }
+        }
+        
+        func handleCleengRegistration(result: Result<Void, Error>) {
+            if case let .failure(error) = result {
+                completion(false, error)
+                return
+            }
+            
+            digicelUser.userType = .Basic
+            DigicelCredentialsManager.saveDigicelUser(digicelUser)
+            
+            digicelApi.fetchSubscriberType(completion: handleDigicelSubscriptionType)
+        }
+        
         let authData = [
             "email": email
         ]
