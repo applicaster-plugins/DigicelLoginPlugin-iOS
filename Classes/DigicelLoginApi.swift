@@ -263,7 +263,7 @@ extension DigicelLoginApi {
     
     fileprivate func makeRequest(request: NSMutableURLRequest, completion: @escaping ((_ result: Any?, _ httpResponse: HTTPURLResponse?, _ error: Error?) -> Void)) {
         let request = request as URLRequest
-        Alamofire.request(request).responseJSON { (responseObject) in
+        Session.default.request(request).responseJSON { (responseObject) in
             guard case let .success(value) = responseObject.result else {
                 completion(nil, responseObject.response, responseObject.error)
                 return
