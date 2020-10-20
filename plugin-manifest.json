@@ -10,9 +10,9 @@
     "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git"
   ],
   "platform": "ios",
-  "author_name": "S. Borkin",
-  "author_email": "s.borkin@applicaster.com",
-  "manifest_version": "2.1.0",
+  "author_name": "Roman Karpievich",
+  "author_email": "r.karpievich@applicaster.com",
+  "manifest_version": "2.2.0",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
@@ -21,11 +21,11 @@
   "identifier": "DigicelLoginPlugin",
   "ui_builder_support": true,
   "dependency_name": "DigicelLoginPlugin",
-  "dependency_version": "3.1.0",
+  "dependency_version": "3.2.0",
   "whitelisted_account_ids": [
     "5af949534da8f300080050f9"
   ],
-  "min_zapp_sdk": "13.0.0",
+  "min_zapp_sdk": "15.0.0",
   "deprecated_since_zapp_sdk": "",
   "unsupported_since_zapp_sdk": "",
   "supported_nav_items": [],
