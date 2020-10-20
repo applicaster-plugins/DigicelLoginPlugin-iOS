@@ -7,12 +7,15 @@
     "require_startup_execution": true
   },
   "dependency_repository_url": [
-    "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git"
+    "git@github.com:applicaster-plugins/DigicelLoginPlugin-iOS.git",
+    "git@github.com:applicaster-plugins/CleengLoginDigicel.git",
+    "git@github.com:applicaster/applicaster-cam-framework.git",
+    "git@github.com:applicaster/applicaster-iap-framework.git"
   ],
   "platform": "ios",
   "author_name": "Roman Karpievich",
   "author_email": "r.karpievich@applicaster.com",
-  "manifest_version": "2.2.0",
+  "manifest_version": "2.2.1",
   "name": "DigicelLoginPlugin",
   "description": "Integration with Digicel Authentication services",
   "type": "login",
